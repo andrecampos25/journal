@@ -31,53 +31,50 @@ class DashboardScreen extends ConsumerWidget {
             child: ImageFiltered(
               imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
               child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.blue.withValues(alpha: 0.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.3),
-                    blurRadius: 100,
-                    spreadRadius: 20,
-                  ),
-                ],
-              ),
-                ],
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.3),
+                      blurRadius: 100,
+                      spreadRadius: 20,
+                    ),
+                  ],
+                ),
               ),
             ).animate(onPlay: (controller) => controller.repeat(reverse: true))
              .scale(duration: 5.seconds, begin: const Offset(0.8, 0.8), end: const Offset(1.2, 1.2), curve: Curves.easeInOut)
              .moveX(duration: 8.seconds, begin: -20, end: 20, curve: Curves.easeInOut),
-            ),
           ),
+          
           Positioned(
             bottom: -50,
             left: -50,
             child: ImageFiltered(
               imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
               child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.purple.withValues(alpha: 0.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withValues(alpha: 0.3),
-                    blurRadius: 100,
-                    spreadRadius: 20,
-                  ),
-                ],
-              ),
-                ],
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.purple.withValues(alpha: 0.1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withValues(alpha: 0.3),
+                      blurRadius: 100,
+                      spreadRadius: 20,
+                    ),
+                  ],
+                ),
               ),
             ).animate(onPlay: (controller) => controller.repeat(reverse: true))
              .scale(duration: 7.seconds, begin: const Offset(1.2, 1.2), end: const Offset(0.9, 0.9), curve: Curves.easeInOut)
              .moveY(duration: 10.seconds, begin: -30, end: 30, curve: Curves.easeInOut),
-            ),
           ),
-          
+
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,5 +418,3 @@ class _StatChip extends StatelessWidget {
     );
   }
 }
-
-

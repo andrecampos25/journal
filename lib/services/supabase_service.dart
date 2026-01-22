@@ -190,7 +190,6 @@ class SupabaseService {
       if (cached != null) return List<Map<String, dynamic>>.from(cached);
       return [];
     }
-    }
   }
 
   // Get ALL habits (for management)
