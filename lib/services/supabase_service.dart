@@ -272,9 +272,7 @@ class SupabaseService {
       });
     }
 
-    final allList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(allCacheKey) ?? []);
-    allList.add(data);
-    await _offlineService.cacheData(allCacheKey, allList);
+
   }
 
   // Update Habit
