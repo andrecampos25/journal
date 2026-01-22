@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 // Keys for Hive Boxes
 const String kCacheBox = 'app_cache';
 const String kQueueBox = 'mutation_queue';
+const String kPinKey = 'vault_pin';
+const String kDefaultPin = '1357';
 
 class OfflineService {
   late Box _cacheBox;
@@ -28,6 +30,13 @@ class OfflineService {
   }
 
   // --- Caching ---
+  
+  // PIN Management
+  String get vaultPin => _cacheBox.get(kPinKey, defaultValue: kDefaultPin);
+  
+  Future<void> setVaultPin(String newPin) async {
+    await _cacheBox.put(kPinKey, newPin);
+  }
 
   // Save data to cache
   Future<void> cacheData(String key, dynamic data) async {

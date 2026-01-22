@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:life_os/services/supabase_service.dart';
 
 class GamificationLogic {
@@ -62,13 +63,20 @@ class GamificationLogic {
   // Simple: Level = Floor(TotalXP / 100) + 1.
   
   static int calculateLevel(int totalXp) {
-    return (totalXp / 100).floor() + 1;
+    // Inverse of: totalXp = 50 * L * (L + 1)
+    // L = (-50 + sqrt(2500 + 200 * totalXp)) / 100
+    if (totalXp <= 0) return 1;
+    return ((-50 + sqrt(2500 + 200 * totalXp)) / 100).floor() + 1;
   }
   
   static double calculateLevelProgress(int totalXp) {
-    // 0.0 to 1.0 progress to next level
-    final currentLevelXp = (calculateLevel(totalXp) - 1) * 100;
-    final nextLevelXp = currentLevelXp + 100;
-    return (totalXp - currentLevelXp) / 100;
+    int level = calculateLevel(totalXp);
+    int currentLevelMinXp = 50 * (level - 1) * level;
+    int nextLevelMinXp = 50 * level * (level + 1);
+    
+    int range = nextLevelMinXp - currentLevelMinXp;
+    int progressXp = totalXp - currentLevelMinXp;
+    
+    return (progressXp / range).clamp(0.0, 1.0);
   }
 }

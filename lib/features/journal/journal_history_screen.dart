@@ -5,11 +5,25 @@ import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
-class JournalHistoryScreen extends ConsumerWidget {
+class JournalHistoryScreen extends ConsumerStatefulWidget {
   const JournalHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JournalHistoryScreen> createState() => _JournalHistoryScreenState();
+}
+
+class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final historyAsync = ref.watch(journalHistoryProvider);
 
     return Scaffold(
@@ -25,23 +39,53 @@ class JournalHistoryScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-         leading: IconButton(
+        leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
           onPressed: () => Navigator.of(context).pop(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+              decoration: InputDecoration(
+                hintText: 'Search memories...',
+                prefixIcon: const Icon(LucideIcons.search, size: 18),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
       body: historyAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (entries) {
-          if (entries.isEmpty) {
+          final filteredEntries = entries.where((e) {
+            final text = (e['journal_text'] as String?)?.toLowerCase() ?? '';
+            final date = DateFormat('MMMM d, y').format(DateTime.parse(e['entry_date'])).toLowerCase();
+            return text.contains(_searchQuery) || date.contains(_searchQuery);
+          }).toList();
+
+          if (filteredEntries.isEmpty) {
              return Center(
                child: Column(
                  mainAxisAlignment: MainAxisAlignment.center,
                  children: [
-                   Icon(LucideIcons.bookOpen, size: 48, color: Colors.grey.withValues(alpha: 0.3)),
+                   Icon(_searchQuery.isEmpty ? LucideIcons.bookOpen : LucideIcons.searchX, size: 48, color: Colors.grey.withValues(alpha: 0.3)),
                    const SizedBox(height: 16),
-                   Text('No journal entries yet.', style: GoogleFonts.inter(color: Colors.grey)),
+                   Text(
+                     _searchQuery.isEmpty ? 'No journal entries yet.' : 'No matches found.', 
+                     style: GoogleFonts.inter(color: Colors.grey)
+                   ),
                  ],
                ),
              );
@@ -49,9 +93,9 @@ class JournalHistoryScreen extends ConsumerWidget {
 
           return ListView.separated(
              padding: const EdgeInsets.all(16),
-             itemCount: entries.length,
+             itemCount: filteredEntries.length,
              separatorBuilder: (c, i) => const SizedBox(height: 12),
-             itemBuilder: (context, index) => _JournalEntryTile(entry: entries[index]),
+             itemBuilder: (context, index) => _JournalEntryTile(entry: filteredEntries[index]),
           );
         },
       ),

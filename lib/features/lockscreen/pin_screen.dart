@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:life_os/services/offline_service.dart';
 import 'package:pinput/pinput.dart';
 
-class PinScreen extends StatefulWidget {
+class PinScreen extends ConsumerStatefulWidget {
   const PinScreen({super.key});
 
   @override
-  State<PinScreen> createState() => _PinScreenState();
+  ConsumerState<PinScreen> createState() => _PinScreenState();
 }
 
-class _PinScreenState extends State<PinScreen> {
+class _PinScreenState extends ConsumerState<PinScreen> {
   final TextEditingController _pinController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _isError = false;
@@ -24,7 +26,8 @@ class _PinScreenState extends State<PinScreen> {
   }
 
   void _validatePin(String pin) {
-    if (pin == '1357') {
+    final correctPin = ref.read(offlineServiceProvider).vaultPin;
+    if (pin == correctPin) {
       // Success
       context.go('/dashboard');
     } else {

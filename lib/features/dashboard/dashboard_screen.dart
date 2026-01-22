@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -41,7 +42,9 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-            ),
+            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+             .scale(duration: 5.seconds, begin: const Offset(0.8, 0.8), end: const Offset(1.2, 1.2), curve: Curves.easeInOut)
+             .moveX(duration: 8.seconds, begin: -20, end: 20, curve: Curves.easeInOut),
           ),
           Positioned(
             bottom: -50,
@@ -60,7 +63,9 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-            ),
+            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+             .scale(duration: 7.seconds, begin: const Offset(1.2, 1.2), end: const Offset(0.9, 0.9), curve: Curves.easeInOut)
+             .moveY(duration: 10.seconds, begin: -30, end: 30, curve: Curves.easeInOut),
           ),
           
           SafeArea(
@@ -141,6 +146,21 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final hour = DateTime.now().hour;
+    String greeting;
+    String subtext;
+    
+    if (hour < 12) {
+      greeting = 'Good Morning,';
+      subtext = 'Ready to seize the day?';
+    } else if (hour < 18) {
+      greeting = 'Good Afternoon,';
+      subtext = 'Keeping the momentum?';
+    } else {
+      greeting = 'Good Evening,';
+      subtext = 'Time to wind down.';
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -148,7 +168,7 @@ class DashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Good Morning,',
+              greeting,
               style: GoogleFonts.lexend(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
@@ -156,7 +176,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
             Text(
-              'Ready to seize the day?',
+              subtext,
               style: GoogleFonts.inter(
                 fontSize: 14, 
                 color: Theme.of(context).colorScheme.secondary,
@@ -165,7 +185,10 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         IconButton(
-          onPressed: () => context.push('/settings'),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            context.push('/settings');
+          },
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -224,7 +247,10 @@ class _NavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: Icon(icon, color: const Color(0xFF1E293B), size: 26),
     );

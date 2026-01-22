@@ -63,26 +63,64 @@ final journalHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) 
 class HabitView {
   final String id;
   final String title;
+  final String icon;
   final bool isCompleted;
 
-  HabitView({required this.id, required this.title, required this.isCompleted});
+  HabitView({required this.id, required this.title, required this.icon, required this.isCompleted});
 }
 
-final todayHabitsProvider = FutureProvider.family<List<HabitView>, DateTime>((ref, date) async {
-  final service = ref.watch(supabaseServiceProvider);
-  await service.signIn();
-
-  final habits = await service.getHabits();
-  final completedIds = await service.getTodayHabitLogIds(date);
-
-  return habits.map((h) {
-    return HabitView(
-      id: h['id'],
-      title: h['title'],
-      isCompleted: completedIds.contains(h['id']),
-    );
-  }).toList();
+// Habits Provider with Optimistic Updates
+final todayHabitsProvider = AsyncNotifierProviderFamily<TodayHabitsNotifier, List<HabitView>, DateTime>(() {
+  return TodayHabitsNotifier();
 });
+
+class TodayHabitsNotifier extends FamilyAsyncNotifier<List<HabitView>, DateTime> {
+  @override
+  Future<List<HabitView>> build(DateTime arg) async {
+    final service = ref.watch(supabaseServiceProvider);
+    await service.signIn();
+
+    final habits = await service.getHabits();
+    final completedIds = await service.getTodayHabitLogIds(arg);
+
+    final dayOfWeek = arg.weekday;
+
+    return habits.where((h) {
+      final freq = h['frequency'] as List?;
+      if (freq == null || freq.isEmpty) return true;
+      // Handle potential dynamic cast issues from Hive/Supabase
+      return freq.map((e) => int.tryParse(e.toString())).contains(dayOfWeek);
+    }).map((h) {
+      return HabitView(
+        id: h['id'],
+        title: h['title'],
+        icon: h['icon'] ?? '✨',
+        isCompleted: completedIds.contains(h['id']),
+      );
+    }).toList();
+  }
+
+  Future<void> toggleHabit(String habitId, bool isCompleted) async {
+    final date = arg;
+    final previousState = state.value;
+    
+    // Optimistic Update
+    if (state.hasValue) {
+      state = AsyncValue.data(
+        state.value!.map((h) => h.id == habitId ? HabitView(id: h.id, title: h.title, icon: h.icon, isCompleted: isCompleted) : h).toList()
+      );
+    }
+
+    try {
+      await ref.read(supabaseServiceProvider).toggleHabit(habitId, date, isCompleted);
+      // Stats might need updating too
+      ref.invalidate(userStatsProvider);
+    } catch (e) {
+      // Revert on error
+      state = AsyncValue.data(previousState!);
+    }
+  }
+}
 
 // All habits for management
 final allHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
@@ -93,11 +131,39 @@ final allHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async
 
 // --- Tasks ---
 
-final todayTasksProvider = FutureProvider.family<List<Map<String, dynamic>>, DateTime>((ref, date) async {
-  final service = ref.watch(supabaseServiceProvider);
-  await service.signIn();
-  return service.getTodayTasks(date);
+// Tasks Provider with Optimistic Updates
+final todayTasksProvider = AsyncNotifierProviderFamily<TodayTasksNotifier, List<Map<String, dynamic>>, DateTime>(() {
+  return TodayTasksNotifier();
 });
+
+class TodayTasksNotifier extends FamilyAsyncNotifier<List<Map<String, dynamic>>, DateTime> {
+  @override
+  Future<List<Map<String, dynamic>>> build(DateTime arg) async {
+    final service = ref.watch(supabaseServiceProvider);
+    await service.signIn();
+    return service.getTodayTasks(arg);
+  }
+
+  Future<void> toggleTask(String id, bool isCompleted) async {
+    final previousState = state.value;
+
+    // Optimistic Update (Remove if completed, or just update flag)
+    if (state.hasValue) {
+       state = AsyncValue.data(
+         state.value!.map((t) => t['id'] == id ? {...t, 'is_completed': isCompleted} : t).toList()
+       );
+    }
+
+    try {
+      await ref.read(supabaseServiceProvider).toggleTaskCompletion(id, isCompleted);
+      ref.invalidate(userStatsProvider);
+      // Invalidate all tasks too
+      ref.invalidate(allTasksProvider);
+    } catch (e) {
+      state = AsyncValue.data(previousState!);
+    }
+  }
+}
 
 // All active tasks for management
 final allTasksProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {

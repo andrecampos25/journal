@@ -33,6 +33,16 @@ class SupabaseService {
         
     return (response as List).map((e) => (e['completed_at'] as String).split('T')[0]).toList();
   }
+
+  Future<List<String>> getHabitLogs(String habitId) async {
+    final response = await _client
+        .from('habit_logs')
+        .select('completed_at')
+        .eq('habit_id', habitId)
+        .order('completed_at', ascending: false);
+        
+    return (response as List).map((e) => (e['completed_at'] as String).split('T')[0]).toList();
+  }
   
   // Get Total XP (Simulated for MVP by counting records?)
   // Real way: 'user_stats' table. 
@@ -199,22 +209,133 @@ class SupabaseService {
   }
 
   // Create Habit
-  Future<void> createHabit(String title) async {
-    await _client.from('habits').insert({
+  Future<void> createHabit(String title, {String? icon, List<int>? frequency}) async {
+    final id = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final data = {
+      'id': id,
       'user_id': userId,
       'title': title,
-      // description, frequency etc can be added later
-    });
+      'icon': icon ?? '✨',
+      'frequency': frequency ?? [1, 2, 3, 4, 5, 6, 7],
+      'archived': false,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+
+    if (await _offlineService.isOnline) {
+      await _client.from('habits').insert(data);
+    } else {
+      await _offlineService.queueMutation('create_habit', {
+        'title': title,
+        'icon': icon,
+        'frequency': frequency,
+      });
+    }
+
+    // Optimistic Cache update for list
+    const activeCacheKey = 'habits_active';
+    const allCacheKey = 'habits_all';
+    
+    final activeList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(activeCacheKey) ?? []);
+    activeList.add(data);
+    await _offlineService.cacheData(activeCacheKey, activeList);
+
+    final allList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(allCacheKey) ?? []);
+    allList.add(data);
+    await _offlineService.cacheData(allCacheKey, allList);
   }
 
   // Update Habit
-  Future<void> updateHabit(String id, String title) async {
-    await _client.from('habits').update({'title': title}).eq('id', id);
+  Future<void> updateHabit(String id, String title, {String? icon, List<int>? frequency}) async {
+    final updateData = {
+      'title': title,
+      if (icon != null) 'icon': icon,
+      if (frequency != null) 'frequency': frequency,
+    };
+
+    if (await _offlineService.isOnline) {
+      await _client.from('habits').update(updateData).eq('id', id);
+    } else {
+      await _offlineService.queueMutation('update_habit', {
+        'id': id,
+        'title': title,
+        'icon': icon,
+        'frequency': frequency,
+      });
+    }
+
+    // Update Cache
+    const activeCacheKey = 'habits_active';
+    const allCacheKey = 'habits_all';
+
+    void updateInList(String key) async {
+       final list = List<Map<String, dynamic>>.from(_offlineService.getCachedData(key) ?? []);
+       final index = list.indexWhere((h) => h['id'] == id);
+       if (index != -1) {
+         list[index] = {
+           ...list[index], 
+           'title': title,
+           if (icon != null) 'icon': icon,
+           if (frequency != null) 'frequency': frequency,
+         };
+         await _offlineService.cacheData(key, list);
+       }
+    }
+    updateInList(activeCacheKey);
+    updateInList(allCacheKey);
   }
 
   // Archive/Unarchive Habit
   Future<void> setHabitArchived(String id, bool archived) async {
-    await _client.from('habits').update({'archived': archived}).eq('id', id);
+    if (await _offlineService.isOnline) {
+      await _client.from('habits').update({'archived': archived}).eq('id', id);
+    } else {
+      await _offlineService.queueMutation('set_habit_archived', {'id': id, 'archived': archived});
+    }
+
+    // Update Cache
+    const activeCacheKey = 'habits_active';
+    const allCacheKey = 'habits_all';
+
+    final activeList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(activeCacheKey) ?? []);
+    final allList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(allCacheKey) ?? []);
+
+    if (archived) {
+      activeList.removeWhere((h) => h['id'] == id);
+    } else {
+      // Re-add to active if it was in all list
+      final habit = allList.firstWhere((h) => h['id'] == id, orElse: () => {});
+      if (habit.isNotEmpty) {
+        activeList.add({...habit, 'archived': false});
+      }
+    }
+    
+    // Update allList status
+    final index = allList.indexWhere((h) => h['id'] == id);
+    if (index != -1) allList[index] = {...allList[index], 'archived': archived};
+
+    await _offlineService.cacheData(activeCacheKey, activeList);
+    await _offlineService.cacheData(allCacheKey, allList);
+  }
+
+  // Delete Habit
+  Future<void> deleteHabit(String id) async {
+    if (await _offlineService.isOnline) {
+      await _client.from('habits').delete().eq('id', id);
+    } else {
+      await _offlineService.queueMutation('delete_habit', {'id': id});
+    }
+
+    // Update Cache
+    const activeCacheKey = 'habits_active';
+    const allCacheKey = 'habits_all';
+
+    final activeList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(activeCacheKey) ?? []);
+    activeList.removeWhere((h) => h['id'] == id);
+    await _offlineService.cacheData(activeCacheKey, activeList);
+
+    final allList = List<Map<String, dynamic>>.from(_offlineService.getCachedData(allCacheKey) ?? []);
+    allList.removeWhere((h) => h['id'] == id);
+    await _offlineService.cacheData(allCacheKey, allList);
   }
 
   // Toggle habit for today
@@ -308,6 +429,7 @@ class SupabaseService {
   // Get tasks due today or overdue
   Future<List<Map<String, dynamic>>> getTodayTasks(DateTime date) async {
     final dateStr = date.toIso8601String().split('T')[0];
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String();
     final cacheKey = 'tasks_today_$dateStr';
     
     try {
@@ -317,7 +439,7 @@ class SupabaseService {
             .select()
             .eq('user_id', userId)
             .eq('is_completed', false)
-            .lte('due_date', dateStr) // Due today or earlier
+            .lte('due_date', endOfDay) // Due today or earlier (overdue)
             .order('due_date');
             
         await _offlineService.cacheData(cacheKey, response);
@@ -347,30 +469,71 @@ class SupabaseService {
 
   // Create Task
   Future<void> createTask(String title, DateTime? dueDate) async {
-    await _client.from('tasks').insert({
+    final id = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final data = {
+      'id': id,
       'user_id': userId,
       'title': title,
       'due_date': dueDate?.toIso8601String(),
-    });
+      'is_completed': false,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+
+    if (await _offlineService.isOnline) {
+      await _client.from('tasks').insert(data);
+    } else {
+      await _offlineService.queueMutation('create_task', {
+        'title': title,
+        'due_date': dueDate?.toIso8601String(),
+      });
+    }
+
+    // Optimistic Cache
+    if (dueDate != null) {
+      final dateStr = dueDate.toIso8601String().split('T')[0];
+      final cacheKey = 'tasks_today_$dateStr';
+      final current = List<Map<String, dynamic>>.from(_offlineService.getCachedData(cacheKey) ?? []);
+      current.add(data);
+      await _offlineService.cacheData(cacheKey, current);
+    }
   }
 
   // Update Task
   Future<void> updateTask(String id, String title, DateTime? dueDate) async {
-    await _client.from('tasks').update({
-       'title': title,
-       'due_date': dueDate?.toIso8601String(),
-    }).eq('id', id);
+    if (await _offlineService.isOnline) {
+      await _client.from('tasks').update({
+         'title': title,
+         'due_date': dueDate?.toIso8601String(),
+      }).eq('id', id);
+    } else {
+      await _offlineService.queueMutation('update_task', {
+        'id': id,
+        'title': title,
+        'due_date': dueDate?.toIso8601String(),
+      });
+    }
+    // Cache update logic could be complex (moving between dates), so we invalidate for now
   }
 
-  // Complete Task (we already have a query for dashboard but maybe we need explicit toggle here too?)
-  // Let's add explicit toggle.
+  // Complete Task
   Future<void> toggleTaskCompletion(String id, bool isCompleted) async {
-    await _client.from('tasks').update({'is_completed': isCompleted}).eq('id', id);
+    if (await _offlineService.isOnline) {
+      await _client.from('tasks').update({'is_completed': isCompleted}).eq('id', id);
+    } else {
+      await _offlineService.queueMutation('toggle_task', {'id': id, 'isCompleted': isCompleted});
+    }
+
+    // Cache update for today's tasks
+    // Since we don't know the exact due_date here easily, it's safer to invalidate or force refresh
   }
 
   // Delete Task
   Future<void> deleteTask(String id) async {
-    await _client.from('tasks').delete().eq('id', id);
+    if (await _offlineService.isOnline) {
+      await _client.from('tasks').delete().eq('id', id);
+    } else {
+      await _offlineService.queueMutation('delete_task', {'id': id});
+    }
   }
   // --- Sync Logic ---
   
@@ -393,6 +556,46 @@ class SupabaseService {
                payload['isCompleted'] as bool
              );
              break;
+          case 'create_habit':
+             await createHabit(
+               payload['title'] as String,
+               icon: payload['icon'] as String?,
+               frequency: (payload['frequency'] as List?)?.cast<int>(),
+             );
+             break;
+          case 'update_habit':
+             await updateHabit(
+               payload['id'] as String, 
+               payload['title'] as String,
+               icon: payload['icon'] as String?,
+               frequency: (payload['frequency'] as List?)?.cast<int>(),
+             );
+             break;
+          case 'delete_habit':
+             await deleteHabit(payload['id'] as String);
+             break;
+          case 'set_habit_archived':
+             await setHabitArchived(payload['id'] as String, payload['archived'] as bool);
+             break;
+          case 'create_task':
+             await createTask(
+               payload['title'] as String, 
+               payload['due_date'] != null ? DateTime.parse(payload['due_date'] as String) : null
+             );
+             break;
+          case 'update_task':
+             await updateTask(
+               payload['id'] as String,
+               payload['title'] as String,
+               payload['due_date'] != null ? DateTime.parse(payload['due_date'] as String) : null
+             );
+             break;
+          case 'toggle_task':
+             await toggleTaskCompletion(payload['id'] as String, payload['isCompleted'] as bool);
+             break;
+          case 'delete_task':
+             await deleteTask(payload['id'] as String);
+             break;
           case 'upsert_entry':
              await upsertDailyEntry(
                DateTime.parse(payload['date'] as String),
@@ -400,7 +603,6 @@ class SupabaseService {
                journal: payload['journal'] as String?
              );
              break;
-          // Add other cases (create_habit, create_task) if implemented offline
         }
         
         // Remove from queue on success

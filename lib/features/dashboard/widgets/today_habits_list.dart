@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:life_os/features/habits/habit_details_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
@@ -94,13 +95,11 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                         final isDone = habit.isCompleted;
                         
                         return GestureDetector(
-                          onTap: () async {
-                             HapticFeedback.lightImpact();
-                             if (!isDone) _playConfetti(); // Celebrate completion
-                             await ref.read(supabaseServiceProvider).toggleHabit(habit.id, today, !isDone);
-                             ref.invalidate(todayHabitsProvider(today));
-                             ref.invalidate(userStatsProvider);
-                          },
+                            onTap: () async {
+                               HapticFeedback.lightImpact();
+                               if (!isDone) _playConfetti(); // Celebrate completion
+                               await ref.read(todayHabitsProvider(today).notifier).toggleHabit(habit.id, !isDone);
+                            },
                           child: AnimatedContainer(
                             duration: 300.ms,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -111,9 +110,15 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                                 color: isDone ? const Color(0xFF10B981).withValues(alpha: 0.3) : Colors.transparent,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                 AnimatedContainer(
+                          child: Row(
+                            children: [
+                               GestureDetector(
+                                onTap: () async {
+                                   HapticFeedback.lightImpact();
+                                   if (!isDone) _playConfetti(); 
+                                   await ref.read(todayHabitsProvider(today).notifier).toggleHabit(habit.id, !isDone);
+                                },
+                                 child: AnimatedContainer(
                                   duration: 200.ms,
                                   width: 22,
                                   height: 22,
@@ -129,23 +134,41 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                                       ? const Icon(Icons.check, size: 16, color: Colors.white)
                                       : null,
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    habit.title,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: isDone ? FontWeight.w500 : FontWeight.w400,
-                                      color: isDone ? const Color(0xFF047857) : const Color(0xFF334155),
-                                      decoration: isDone ? TextDecoration.lineThrough : null,
-                                      decorationColor: const Color(0xFF10B981),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                     Navigator.push(context, MaterialPageRoute(builder: (c) => HabitDetailsScreen(habit: {
+                                       'id': habit.id,
+                                       'title': habit.title,
+                                       'icon': habit.icon,
+                                     })));
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Text(habit.icon, style: const TextStyle(fontSize: 18)),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          habit.title,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: isDone ? FontWeight.w500 : FontWeight.w400,
+                                            color: isDone ? const Color(0xFF047857) : const Color(0xFF334155),
+                                            decoration: isDone ? TextDecoration.lineThrough : null,
+                                            decorationColor: const Color(0xFF10B981),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
                           ),
                         );
                       },

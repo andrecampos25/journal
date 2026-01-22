@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
@@ -189,6 +190,7 @@ class _TaskTile extends ConsumerWidget {
         leading: IconButton(
           icon: const Icon(LucideIcons.circle, color: Color(0xFF94A3B8)),
           onPressed: () async {
+             HapticFeedback.lightImpact();
              final service = ref.read(supabaseServiceProvider);
              await service.toggleTaskCompletion(task['id'], true);
              ref.invalidate(allTasksProvider);

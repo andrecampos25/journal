@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:life_os/services/supabase_service.dart';
@@ -81,7 +82,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text('Change PIN', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
             trailing: const Icon(Icons.chevron_right, color: Colors.grey),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN Change coming soon (Edit in pin_screen.dart)')));
+              HapticFeedback.lightImpact();
+              _showChangePinDialog(context);
             },
           ),
           
@@ -104,6 +106,83 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(LucideIcons.info, color: Color(0xFF64748B)),
             title: Text('Version', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
             trailing: Text(_version, style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePinDialog(BuildContext context) {
+    final currentPinController = TextEditingController();
+    final newPinController = TextEditingController();
+    final confirmPinController = TextEditingController();
+    final offlineService = ref.read(offlineServiceProvider);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Change PIN', style: GoogleFonts.lexend(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPinController,
+              decoration: const InputDecoration(labelText: 'Current PIN', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 4,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPinController,
+              decoration: const InputDecoration(labelText: 'New 4-Digit PIN', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 4,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmPinController,
+              decoration: const InputDecoration(labelText: 'Confirm New PIN', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final current = currentPinController.text;
+              final next = newPinController.text;
+              final confirm = confirmPinController.text;
+
+              if (current != offlineService.vaultPin) {
+                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Incorrect current PIN')));
+                 return;
+              }
+              if (next.length != 4) {
+                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN must be 4 digits')));
+                 return;
+              }
+              if (next != confirm) {
+                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('New PINs do not match')));
+                 return;
+              }
+
+              await offlineService.setVaultPin(next);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN changed successfully')));
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1E293B)),
+            child: Text('Update', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
         ],
       ),

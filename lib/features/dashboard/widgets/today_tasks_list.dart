@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -54,43 +55,46 @@ class TodayTasksList extends ConsumerWidget {
                   separatorBuilder: (c, i) => Divider(height: 12, color: Colors.grey.withValues(alpha: 0.1)),
                   itemBuilder: (context, index) {
                     final task = tasks[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF64748B),
-                              shape: BoxShape.circle,
+                    return GestureDetector(
+                      onTap: () async {
+                        HapticFeedback.lightImpact();
+                        await ref.read(todayTasksProvider(today).notifier).toggleTask(task['id'], true);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              LucideIcons.circle, 
+                              size: 18, 
+                              color: Color(0xFF94A3B8)
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              task['title'] ?? 'Untitled',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF334155),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (task['due_date'] != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              (task['due_date'] as String).substring(11, 16),
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: const Color(0xFF94A3B8),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                task['title'] ?? 'Untitled',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF334155),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ]
-                        ],
+                            if (task['due_date'] != null) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                (task['due_date'] as String).substring(11, 16),
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ]
+                          ],
+                        ),
                       ),
                     );
                   },
