@@ -244,21 +244,8 @@ class SupabaseService {
 
     if (await _offlineService.isOnline) {
       try {
-        // Remove 'id' if it's generated client-side and DB generates it? 
-        // No, we want to use the same ID if possible or handle UUID.
-        // For simplicity, let's assume we send the data as is.
-        // But if ID is 'temp_', DB might reject if it expects UUID.
-        // We should let DB generate ID and then update cache?
-        // Truly optimistic requires using a temp ID and then swapping it, which is complex.
-        // For now, we'll try to insert. If it fails, the cache has the item.
-    if (await _offlineService.isOnline) {
-      try {
-        await _client.from('habits').insert(Map<String, dynamic>.from(data)..remove('id')); // Insert COPY without ID
+        await _client.from('habits').insert(Map<String, dynamic>.from(data)..remove('id')); 
       } catch (e) {
-        // Better: Generate a real UUID locally.
-        // For now, sticking to current logic but handling error:
-      } catch (e) {
-         // Queue for retry
          await _offlineService.queueMutation('create_habit', {
           'title': title,
           'icon': icon,
