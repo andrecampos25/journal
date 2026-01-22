@@ -89,44 +89,54 @@ class DashboardScreen extends ConsumerWidget {
                 
                 // Scrollable Content
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Gamification Stats
-                        const _StatsRow(),
-                        const SizedBox(height: 24),
-                        
-                        // Tasks & Habits Combined Card
-                        Container(
-                           decoration: BoxDecoration(
-                             color: Theme.of(context).cardColor.withValues(alpha: 0.5),
-                             borderRadius: BorderRadius.circular(24),
-                             border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                           ),
-                           child: Column(
-                             children: [
-                               const TodayTasksList(),
-                               Divider(color: Colors.grey.withValues(alpha: 0.1), height: 1),
-                               const TodayHabitsList(),
-                             ],
-                           ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Daily Entry
-                        const SizedBox(
-                          height: 300,
-                          child: DailyEntryCard(),
-                        ),
-                        
-                        // Spacer for fixed nav bar
-                        const SizedBox(height: 100),
-                      ],
-                    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      final date = ref.read(selectedDateProvider);
+                      ref.invalidate(todayTasksProvider(date));
+                      ref.invalidate(todayHabitsProvider(date));
+                      ref.invalidate(userStatsProvider);
+                      // Wait for a small delay or for one of the providers to complete
+                      await ref.read(todayHabitsProvider(date).future);
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(), // Ensure it can always scroll for refresh
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Gamification Stats
+                          const _StatsRow(),
+                          const SizedBox(height: 24),
+                          
+                          // Tasks & Habits Combined Card
+                          Container(
+                             decoration: BoxDecoration(
+                               color: Theme.of(context).cardColor.withValues(alpha: 0.5),
+                               borderRadius: BorderRadius.circular(24),
+                               border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                             ),
+                             child: Column(
+                               children: [
+                                 const TodayTasksList(),
+                                 Divider(color: Colors.grey.withValues(alpha: 0.1), height: 1),
+                                 const TodayHabitsList(),
+                               ],
+                             ),
+                          ),
+  
+                          const SizedBox(height: 24),
+  
+                          // Daily Entry
+                          const SizedBox(
+                            height: 300,
+                            child: DailyEntryCard(),
+                          ),
+                          
+                          // Spacer for fixed nav bar
+                          const SizedBox(height: 100),
+                        ],
+                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
+                    ),
                   ),
                 ),
               ],
