@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'package:life_os/services/supabase_service.dart';
-
 class GamificationLogic {
   
   // Calculate Streak: Consecutive days with at least one completed habit or daily entry
@@ -52,31 +49,5 @@ class GamificationLogic {
     }
     
     return streak;
-  }
-  
-  // Calculate XP and Level
-  // Logic: 
-  // 1 Habit = 10 XP
-  // 1 Daily Entry = 20 XP
-  // 1 Task = 15 XP
-  // Level N requires N * 100 XP? Or incremental curve.
-  // Simple: Level = Floor(TotalXP / 100) + 1.
-  
-  static int calculateLevel(int totalXp) {
-    // Inverse of: totalXp = 50 * L * (L + 1)
-    // L = (-50 + sqrt(2500 + 200 * totalXp)) / 100
-    if (totalXp <= 0) return 1;
-    return ((-50 + sqrt(2500 + 200 * totalXp)) / 100).floor() + 1;
-  }
-  
-  static double calculateLevelProgress(int totalXp) {
-    int level = calculateLevel(totalXp);
-    int currentLevelMinXp = 50 * (level - 1) * level;
-    int nextLevelMinXp = 50 * level * (level + 1);
-    
-    int range = nextLevelMinXp - currentLevelMinXp;
-    int progressXp = totalXp - currentLevelMinXp;
-    
-    return (progressXp / range).clamp(0.0, 1.0);
   }
 }

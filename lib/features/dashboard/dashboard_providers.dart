@@ -7,15 +7,9 @@ import 'package:life_os/core/models/models.dart';
 
 class UserStats {
   final int streak;
-  final int level;
-  final double currentLevelProgress;
-  final int totalXp;
 
   UserStats({
     required this.streak, 
-    required this.level, 
-    required this.currentLevelProgress,
-    required this.totalXp
   });
 }
 
@@ -26,15 +20,8 @@ final userStatsProvider = FutureProvider<UserStats>((ref) async {
   final activityDates = await service.getHabitActivityDates();
   final streak = GamificationLogic.calculateStreak(activityDates);
   
-  final totalXp = await service.getTotalXp();
-  final level = GamificationLogic.calculateLevel(totalXp);
-  final progress = GamificationLogic.calculateLevelProgress(totalXp);
-  
   return UserStats(
     streak: streak,
-    level: level,
-    currentLevelProgress: progress,
-    totalXp: totalXp
   );
 });
 

@@ -213,50 +213,65 @@ class DashboardScreen extends ConsumerWidget {
             
             // Compact Stats
             statsAsync.when(
-              data: (stats) => Row(
-                children: [
-                  // Streak
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('🔥', style: TextStyle(fontSize: 16)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${stats.streak}',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: const Color(0xFFF59E0B)),
-                        ),
+                // Premium Streak Counter
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                        const Color(0xFFD97706).withValues(alpha: 0.2),
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Level with Pie Chart
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                       SizedBox(
-                         width: 36,
-                         height: 36,
-                         child: CircularProgressIndicator(
-                           value: stats.currentLevelProgress,
-                           strokeWidth: 3,
-                           backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.2),
-                           valueColor: const AlwaysStoppedAnimation(Color(0xFF6366F1)),
-                         ),
-                       ),
-                       Text(
-                         '${stats.level}',
-                         style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF6366F1)),
-                       ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
                     ],
                   ),
-                ],
-              ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('🔥', style: const TextStyle(fontSize: 20))
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .scale(duration: 800.ms, begin: const Offset(1, 1), end: const Offset(1.2, 1.2))
+                          .then().shimmer(duration: 1200.ms, color: Colors.white.withValues(alpha: 0.5)),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${stats.streak}',
+                            style: GoogleFonts.lexend(
+                              fontWeight: FontWeight.w800, 
+                              fontSize: 16, 
+                              color: const Color(0xFFF59E0B),
+                              height: 1.0,
+                            ),
+                          ),
+                          Text(
+                            'DAY STREAK',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 8,
+                              color: const Color(0xFFD97706),
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               loading: () => const SizedBox.shrink(),
               error: (e, s) => const SizedBox.shrink(),
             ),
