@@ -148,7 +148,90 @@ class TodayTasksNotifier extends FamilyAsyncNotifier<List<Task>, DateTime> {
   @override
   Future<List<Task>> build(DateTime arg) async {
     final service = ref.watch(supabaseServiceProvider);
-    return service.getTodayTasks(arg);
+    
+    // 1. Fetch Today's Scheduled Tasks
+    final todayTasks = await service.getTodayTasks(arg);
+    
+    // If we have 3 or more today tasks, we just show them (and maybe more)
+    // The requirement implies we show *exactly* 3 in the dashboard card usually, 
+    // but the provider returns a list. 
+    // Wait, the Dashboard widget might slice it, or we slice it here?
+    // "Top 3 priority tasks show up in dashboard".
+    // "When no tasks are dated for today".
+    // "When tasks are dated for today, replace top priority tasks starting from the 3rd to the 1st".
+    
+    // Actually, this provider `todayTasksProvider` is used by the `TodayTasksList` widget.
+    // If this list is meant to represent "The 3 Tasks to Show", we should apply logic here.
+    
+    // Fetch ALL active backlog tasks (undated or future? No, usually priority is backlog)
+    // Let's assume Priority = Active non-completed tasks (sorted by position), excluding Today's?
+    // Or just All Active tasks? 
+    // The prompt says "Top 3 priority tasks... when no tasks are dated for today".
+    // This implies "Priority Tasks" are a separate bucket (e.g., undated backlog).
+    // Let's assume we fetch all active tasks and filter out those scheduled for today to get "Backlog".
+    
+    final allActive = await service.getAllActiveTasks();
+    
+    // Filter Backlog: Tasks that are NOT scheduled for today (or already included in todayTasks)
+    // We assume 'getAllActiveTasks' returns everything not completed.
+    // 'todayTasks' are those with due_date <= today end of day.
+    // So Backlog = Active tasks with NO due date OR due date in future? 
+    // Usually "Priority" implies the user manually ordered them.
+    // Let's exclude tasks with specific due dates today from "Backlog Source".
+    
+    final todayIds = todayTasks.map((t) => t.id).toSet();
+    final backlog = allActive.where((t) => !todayIds.contains(t.id)).toList();
+    
+    // Logic:
+    // We want a final list of 3 items max for the dashboard "Focus" view? 
+    // Or does the user want this mixed list to be THE list shown?
+    // "Top 3 priority tasks show up in dashboard".
+    
+    // Visualizing the Slots: [1] [2] [3]
+    
+    // Case 0: 0 Today Tasks.
+    // Show Backlog[0], Backlog[1], Backlog[2].
+    
+    // Case 1: 1 Today Task.
+    // Show Backlog[0], Backlog[1], Today[0]. 
+    // (User said "replace top priority tasks starting from the 3rd to the 1st")
+    // This confirms: Slot 3 is the first to go.
+    
+    // Case 2: 2 Today Tasks.
+    // Show Backlog[0], Today[0], Today[1].
+    
+    // Case 3: 3+ Today Tasks.
+    // Show Today[0], Today[1], Today[2]... 
+    
+    // WAIT. If I have 10 Today Tasks, do I show only 3? 
+    // The request mentions "Top 3 priority tasks show up in dashboard". 
+    // This implies the dashboard WIDGET has limited space (maybe 3 slots).
+    // But `todayTasksProvider` might be used for a full list screen too?
+    // No, `today_tasks_list.dart` is the widget. Use logic there?
+    // BUT the provider is named `todayTasksProvider`. If I change its return to be this "Mixed Bag", 
+    // it implies "Focus Tasks".
+    
+    // Let's construct this "Focus List".
+    
+    List<Task> result = [];
+    
+    if (todayTasks.isEmpty) {
+      result.addAll(backlog.take(3));
+    } else if (todayTasks.length == 1) {
+      result.addAll(backlog.take(2));
+      result.add(todayTasks[0]);
+    } else if (todayTasks.length == 2) {
+      result.addAll(backlog.take(1));
+      result.addAll(todayTasks);
+    } else {
+      // 3 or more today tasks
+      result.addAll(todayTasks); // Show all today tasks? Or just top 3?
+      // User said "replace top priority tasks starting from the 3rd to the 1st".
+      // If I have 3 today tasks, they take slots 3, 2, 1.
+      // So result is just todayTasks.
+    }
+    
+    return result;
   }
 
   Future<void> refresh() async {

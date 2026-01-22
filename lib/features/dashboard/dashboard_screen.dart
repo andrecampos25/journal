@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:life_os/features/dashboard/widgets/daily_entry_card.dart';
@@ -11,6 +11,7 @@ import 'package:life_os/features/dashboard/widgets/calendar_strip.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
+import 'package:life_os/core/utils/quotes_logic.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 
@@ -199,80 +200,53 @@ class DashboardScreen extends ConsumerWidget {
           greeting = 'Good Evening';
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        final quote = QuotesLogic.getDailyQuote();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              greeting,
-              style: GoogleFonts.lexend(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            
-            // Compact Stats
-            statsAsync.when(
-              data: (stats) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFF59E0B).withValues(alpha: 0.2),
-                        const Color(0xFFD97706).withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('🔥', style: const TextStyle(fontSize: 20))
-                          .animate(onPlay: (c) => c.repeat(reverse: true))
-                          .scale(duration: 800.ms, begin: const Offset(1, 1), end: const Offset(1.2, 1.2))
-                          .then().shimmer(duration: 1200.ms, color: Colors.white.withValues(alpha: 0.5)),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${stats.streak}',
-                            style: GoogleFonts.lexend(
-                              fontWeight: FontWeight.w800, 
-                              fontSize: 16, 
-                              color: const Color(0xFFF59E0B),
-                              height: 1.0,
-                            ),
-                          ),
-                          Text(
-                            'DAY STREAK',
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 8,
-                              color: const Color(0xFFD97706),
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  greeting,
+                  style: GoogleFonts.lexend(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-              loading: () => const SizedBox.shrink(),
-              error: (e, s) => const SizedBox.shrink(),
+                
+                // Minimalist Streak
+                statsAsync.when(
+                  data: (stats) => Row(
+                    children: [
+                      const Text('🔥', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${stats.streak}',
+                        style: GoogleFonts.lexend(
+                          fontWeight: FontWeight.w600, 
+                          fontSize: 18, 
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, s) => const SizedBox.shrink(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '"${quote['text']}"',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                fontStyle: FontStyle.italic,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           ],
         );

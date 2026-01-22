@@ -492,8 +492,30 @@ class SupabaseService {
         .select()
         .eq('user_id', userId)
         .eq('is_completed', false)
-        .order('due_date');
+        .order('position') // Sort by manual position
+        .order('created_at'); // Fallback
+        
     return (response as List).map((e) => Task.fromMap(e)).toList();
+  }
+
+  // Reorder Tasks
+  Future<void> reorderTasks(List<Task> tasks) async {
+    // In a real app, we might optimize this to only update changed items
+    if (await _offlineService.isOnline) {
+       for (int i = 0; i < tasks.length; i++) {
+         await _client.from('tasks').update({'position': i.toDouble()}).eq('id', tasks[i].id);
+       }
+    } else {
+       // Queue complex reorder? For now, we might skip offline reordering complexity 
+       // or implement a bulk update payload.
+       // Let's iterate:
+       for (int i = 0; i < tasks.length; i++) {
+          await _offlineService.queueMutation('update_task_position', {
+            'id': tasks[i].id,
+            'position': i.toDouble()
+          });
+       }
+    }
   }
 
   // Create Task

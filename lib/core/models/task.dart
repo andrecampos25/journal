@@ -6,6 +6,7 @@ class Task {
   final DateTime? dueDate;
   final bool isCompleted;
   final DateTime createdAt;
+  final double position;
 
   Task({
     required this.id,
@@ -14,6 +15,7 @@ class Task {
     this.dueDate,
     this.isCompleted = false,
     required this.createdAt,
+    this.position = 0.0,
   });
 
   /// Create from Supabase/JSON map
@@ -27,6 +29,7 @@ class Task {
       createdAt: map['created_at'] != null 
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
+      position: (map['position'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -39,6 +42,7 @@ class Task {
       'due_date': dueDate?.toIso8601String(),
       'is_completed': isCompleted,
       'created_at': createdAt.toIso8601String(),
+      'position': position,
     };
   }
 
@@ -50,6 +54,7 @@ class Task {
     DateTime? dueDate,
     bool? isCompleted,
     DateTime? createdAt,
+    double? position,
   }) {
     return Task(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class Task {
       dueDate: dueDate ?? this.dueDate,
       isCompleted: isCompleted ?? this.isCompleted,
       createdAt: createdAt ?? this.createdAt,
+      position: position ?? this.position,
     );
   }
 

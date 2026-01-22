@@ -57,10 +57,63 @@ class TaskManagementScreen extends ConsumerWidget {
              );
           }
 
-          return ListView.builder(
+          final sortedTasks = List<Task>.from(tasks); // Ensure mutable
+
+          return ReorderableListView.builder(
              padding: const EdgeInsets.all(16),
-             itemCount: tasks.length,
-             itemBuilder: (context, index) => _TaskTile(task: tasks[index]),
+             itemCount: sortedTasks.length,
+             onReorder: (oldIndex, newIndex) {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = sortedTasks.removeAt(oldIndex);
+                sortedTasks.insert(newIndex, item);
+                
+                // Optimistic UI update (optional, but good for UX)
+                // We mainly want to call the service to update DB
+                final service = ref.read(supabaseServiceProvider);
+                service.reorderTasks(sortedTasks);
+                
+                // Invalidate to fetch fresh order if needed, or rely on optimistics
+                ref.invalidate(allTasksProvider);
+             },
+             proxyDecorator: (child, index, animation) {
+               return AnimatedBuilder(
+                 animation: animation,
+                 builder: (BuildContext context, Widget? child) {
+                   return Material(
+                     elevation: 0,
+                     color: Colors.transparent,
+                     child: Transform.scale(
+                        scale: 1.05,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 20,
+                                spreadRadius: -5,
+                              )
+                            ]
+                          ),
+                          child: child,
+                        ),
+                     ),
+                   );
+                 },
+                 child: child,
+               );
+             },
+             itemBuilder: (context, index) {
+               final task = sortedTasks[index];
+               return Padding(
+                 key: ValueKey(task.id), // Key is crucial for ReorderableListView
+                 padding: const EdgeInsets.only(bottom: 12),
+                 child: _TaskTile(task: task),
+               );
+             },
           );
         },
       ),
@@ -87,7 +140,6 @@ class _TaskTile extends ConsumerWidget {
     final isOverdue = task.isOverdue;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
