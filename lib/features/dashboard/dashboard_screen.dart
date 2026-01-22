@@ -112,28 +112,6 @@ class DashboardScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Gamification Stats
-                          const _StatsRow(),
-                          const SizedBox(height: 24),
-                          
-                          // Tasks & Habits Combined Card
-                          Container(
-                             decoration: BoxDecoration(
-                               color: Theme.of(context).cardColor.withValues(alpha: 0.5),
-                               borderRadius: BorderRadius.circular(24),
-                               border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                             ),
-                             child: Column(
-                               children: [
-                                 const TodayTasksList(),
-                                 Divider(color: Colors.grey.withValues(alpha: 0.1), height: 1),
-                                 const TodayHabitsList(),
-                               ],
-                             ),
-                          ),
-  
-                          const SizedBox(height: 24),
-  
                           // Daily Entry
                           const SizedBox(
                             height: 300,
@@ -164,26 +142,21 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final hour = DateTime.now().hour;
-    String greeting;
-    String subtext;
-    
-    if (hour < 12) {
-      greeting = 'Good Morning,';
-      subtext = 'Ready to seize the day?';
-    } else if (hour < 18) {
-      greeting = 'Good Afternoon,';
-      subtext = 'Keeping the momentum?';
-    } else {
-      greeting = 'Good Evening,';
-      subtext = 'Time to wind down.';
-    }
+    return Consumer(
+      builder: (context, ref, _) {
+        final statsAsync = ref.watch(userStatsProvider);
+        final hour = DateTime.now().hour;
+        String greeting;
+        if (hour < 12) {
+          greeting = 'Good Morning';
+        } else if (hour < 18) {
+          greeting = 'Good Afternoon';
+        } else {
+          greeting = 'Good Evening';
+        }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               greeting,
@@ -193,30 +166,59 @@ class DashboardScreen extends ConsumerWidget {
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            Text(
-              subtext,
-              style: GoogleFonts.inter(
-                fontSize: 14, 
-                color: Theme.of(context).colorScheme.secondary,
+            
+            // Compact Stats
+            statsAsync.when(
+              data: (stats) => Row(
+                children: [
+                  // Streak
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${stats.streak}',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, color: const Color(0xFFF59E0B)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Level with Pie Chart
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                       SizedBox(
+                         width: 36,
+                         height: 36,
+                         child: CircularProgressIndicator(
+                           value: stats.currentLevelProgress,
+                           strokeWidth: 3,
+                           backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                           valueColor: const AlwaysStoppedAnimation(Color(0xFF6366F1)),
+                         ),
+                       ),
+                       Text(
+                         '${stats.level}',
+                         style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF6366F1)),
+                       ),
+                    ],
+                  ),
+                ],
               ),
+              loading: () => const SizedBox.shrink(),
+              error: (e, s) => const SizedBox.shrink(),
             ),
           ],
-        ),
-        IconButton(
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            context.push('/settings');
-          },
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(LucideIcons.settings, size: 20, color: Theme.of(context).colorScheme.secondary),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -227,7 +229,7 @@ class DashboardScreen extends ConsumerWidget {
         color: isDark 
             ? const Color(0xFF1E293B).withValues(alpha: 0.9)
             : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: isDark 
               ? Colors.white.withValues(alpha: 0.1)
@@ -244,7 +246,7 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Padding(
@@ -255,6 +257,7 @@ class DashboardScreen extends ConsumerWidget {
                 _NavButton(icon: LucideIcons.history, label: 'Journal', onTap: () => context.push('/journal')),
                 _NavButton(icon: LucideIcons.checkCircle, label: 'Habits', onTap: () => context.push('/habits')),
                 _NavButton(icon: LucideIcons.listTodo, label: 'Tasks', onTap: () => context.push('/tasks')),
+                _NavButton(icon: LucideIcons.settings, label: 'Settings', onTap: () => context.push('/settings')),
               ],
             ),
           ),
@@ -284,137 +287,4 @@ class _NavButton extends StatelessWidget {
   }
 }
 
-class _StatsRow extends ConsumerWidget {
-  const _StatsRow();
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(userStatsProvider);
-    
-    return IntrinsicHeight( // Ensures equal height
-      child: statsAsync.when(
-        data: (stats) => Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _StatChip(
-                icon: LucideIcons.flame,
-                label: '${stats.streak} Streak',
-                color: const Color(0xFFF59E0B),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatChip(
-                icon: LucideIcons.trophy,
-                label: 'Lvl ${stats.level} • ${stats.totalXp} XP',
-                color: const Color(0xFF6366F1),
-                progress: stats.currentLevelProgress,
-              ),
-            ),
-          ],
-        ),
-        loading: () => const SizedBox(height: 48),
-        error: (e, s) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(LucideIcons.alertCircle, size: 16, color: Theme.of(context).colorScheme.error),
-              const SizedBox(width: 8),
-              Text(
-                'Stats unavailable',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => ref.invalidate(userStatsProvider),
-                child: Text(
-                  'Retry',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final double? progress;
-
-  const _StatChip({required this.icon, required this.label, required this.color, this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // Solid card color for better read
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          if (progress != null) ...[
-             const SizedBox(height: 8),
-             ClipRRect(
-               borderRadius: BorderRadius.circular(4),
-               child: LinearProgressIndicator(
-                 value: progress,
-                 minHeight: 6,
-                 backgroundColor: color.withValues(alpha: 0.1),
-                 valueColor: AlwaysStoppedAnimation(color),
-               ),
-             ),
-          ] else ...[
-             // Spacer to match the height if progress is missing? 
-             // IntrinsicHeight handles the container height matching, 
-             // but contents might not be vertically centered if one has extra widget.
-             // Adding transparent spacer or ensuring alignment helps.
-             const SizedBox(height: 14), // Approx height of progress bar + padding
-          ]
-        ],
-      ),
-    );
-  }
-}

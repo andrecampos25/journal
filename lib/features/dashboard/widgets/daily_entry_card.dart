@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,20 +75,32 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
     final moodEmoji = _getMoodEmoji(_moodValue);
     final moodColor = _getMoodColor(_moodValue);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF94A3B8).withValues(alpha: 0.15),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: Theme.of(context).dividerColor, width: 2),
+        borderRadius: BorderRadius.circular(32),
       ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+           child: Container(
+             padding: const EdgeInsets.all(20),
+             decoration: BoxDecoration(
+               color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.7),
+               borderRadius: BorderRadius.circular(32),
+               border: Border.all(
+                 color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4),
+               ),
+             ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -173,7 +186,10 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
             ),
           ),
         ],
-      ),
+             ),
+           ),
+         ),
+       ),
     );
   }
 }
