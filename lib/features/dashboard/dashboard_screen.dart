@@ -182,29 +182,28 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildNavigationCard(BuildContext context) {
      return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withValues(alpha: 0.95), // Darker, more contrast for nav
-        borderRadius: BorderRadius.circular(32),
+        color: Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: const Color(0xFF94A3B8).withValues(alpha: 0.15),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _NavButton(icon: LucideIcons.history, label: 'Journal', onTap: () => context.push('/journal')),
-                Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.1)),
                 _NavButton(icon: LucideIcons.checkCircle, label: 'Habits', onTap: () => context.push('/habits')),
-                Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.1)),
                 _NavButton(icon: LucideIcons.listTodo, label: 'Tasks', onTap: () => context.push('/tasks')),
               ],
             ),
@@ -226,14 +225,8 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 24),
-          // const SizedBox(height: 4),
-          // Text(label, style: GoogleFonts.inter(fontSize: 10, color: Colors.white70)),
-        ],
-      ),
+      behavior: HitTestBehavior.opaque,
+      child: Icon(icon, color: const Color(0xFF1E293B), size: 26),
     );
   }
 }
