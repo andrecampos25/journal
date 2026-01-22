@@ -110,7 +110,7 @@ class SupabaseService {
 
     if (await _offlineService.isOnline) {
       if (existing != null) {
-         await _client.from('daily_entries').update(data).eq('id', existing['id']);
+         await _client.from('daily_entries').update(data).eq('id', existing.id!);
       } else {
          await _client.from('daily_entries').insert(data);
       }
@@ -119,7 +119,7 @@ class SupabaseService {
       // We need the full object to cache. Ideally fetch again or construct it.
       // Construct:
       final newEntry = {
-        'id': existing?['id'] ?? 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        'id': existing?.id ?? 'temp_${DateTime.now().millisecondsSinceEpoch}',
         ...data
       };
       await _offlineService.cacheData(cacheKey, newEntry);

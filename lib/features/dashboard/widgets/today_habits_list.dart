@@ -8,7 +8,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:confetti/confetti.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'dart:math';
 
 class TodayHabitsList extends ConsumerStatefulWidget {
   const TodayHabitsList({super.key});

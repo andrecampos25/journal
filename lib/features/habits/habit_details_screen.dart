@@ -60,7 +60,7 @@ class HabitDetailsScreen extends ConsumerWidget {
                 if (logs.isEmpty)
                    Center(child: Text('No history yet. Start today!', style: GoogleFonts.inter(color: Colors.grey)))
                 else
-                  ...logs.take(5).map((date) => _buildHistoryTile(date)).toList(),
+                  ...logs.take(5).map((date) => _buildHistoryTile(date)),
               ],
             ),
           );
