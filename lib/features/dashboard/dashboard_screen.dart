@@ -15,11 +15,42 @@ import 'package:life_os/core/utils/quotes_logic.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsBindingObserver {
+  
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh data when app comes to foreground
+      final date = ref.read(selectedDateProvider);
+      ref.invalidate(todayHabitsProvider(date));
+      // Refreshing the notifier directly if possible, or just invalidate
+      ref.read(todayHabitsProvider(date).notifier).refresh();
+      ref.read(todayTasksProvider(date).notifier).refresh();
+      ref.invalidate(userStatsProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Glassmorphism background gradient
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

@@ -108,10 +108,20 @@ class TaskManagementScreen extends ConsumerWidget {
              },
              itemBuilder: (context, index) {
                final task = sortedTasks[index];
-               return Padding(
-                 key: ValueKey(task.id), // Key is crucial for ReorderableListView
-                 padding: const EdgeInsets.only(bottom: 12),
-                 child: _TaskTile(task: task),
+               
+               // Wrap with ReorderableDragStartListener for specific handle dragging if needed,
+               // but ReorderableListView usually handles dragging on long press of the item by default.
+               // However, user requested "grip dots". 
+               // We will put the listeners INSIDE the tile on the handle.
+               // Actually, ReorderableListView needs the index. 
+               
+               return ReorderableDragStartListener(
+                 key: ValueKey(task.id),
+                 index: index,
+                 child: Padding(
+                   padding: const EdgeInsets.only(bottom: 12),
+                   child: _TaskTile(task: task, index: index),
+                 ),
                );
              },
           );
@@ -132,18 +142,26 @@ void showTaskSheet(BuildContext context, WidgetRef ref, [Task? task]) {
 
 class _TaskTile extends ConsumerWidget {
   final Task task;
-  const _TaskTile({required this.task});
+  final int index; // Added rank index
+  const _TaskTile({required this.task, required this.index});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dueDate = task.dueDate;
     final isOverdue = task.isOverdue;
+    final rank = index + 1;
+    final isTopPriority = rank <= 3;
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+        border: Border.all(
+          color: isTopPriority 
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+              : Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          width: isTopPriority ? 1.5 : 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -153,30 +171,54 @@ class _TaskTile extends ConsumerWidget {
         ],
       ),
       child: ListTile(
-        leading: GestureDetector(
-          onTap: () async {
-             HapticFeedback.lightImpact();
-             final service = ref.read(supabaseServiceProvider);
-             await service.toggleTaskCompletion(task.id, true);
-             ref.invalidate(allTasksProvider);
-             ref.invalidate(todayTasksProvider(DateTime.now()));
-          },
-          child: Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
-            ),
-            child: Icon(LucideIcons.circle, color: Theme.of(context).colorScheme.primary, size: 20),
-          ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+             // Rank Badge
+             Container(
+               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+               decoration: BoxDecoration(
+                 color: isTopPriority ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+                 borderRadius: BorderRadius.circular(8),
+               ),
+               child: Text(
+                 '#$rank',
+                 style: GoogleFonts.lexend(
+                   fontSize: 12,
+                   fontWeight: FontWeight.w700,
+                   color: isTopPriority ? Theme.of(context).colorScheme.primary : Colors.grey,
+                 ),
+               ),
+             ),
+             const SizedBox(width: 12),
+             GestureDetector(
+                onTap: () async {
+                   HapticFeedback.lightImpact();
+                   final service = ref.read(supabaseServiceProvider);
+                   await service.toggleTaskCompletion(task.id, true);
+                   ref.invalidate(allTasksProvider);
+                   ref.invalidate(todayTasksProvider(DateTime.now()));
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Icon(LucideIcons.circle, color: Theme.of(context).colorScheme.primary, size: 18),
+                ),
+             ),
+          ],
         ),
         title: Text(
           task.title,
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
+            fontSize: 16,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
@@ -194,11 +236,16 @@ class _TaskTile extends ConsumerWidget {
             ),
           ],
         ) : null,
-        trailing: IconButton(
-          icon: const Icon(LucideIcons.moreVertical, size: 18, color: Color(0xFF64748B)),
-          onPressed: () {
-            showTaskSheet(context, ref, task);
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(LucideIcons.moreVertical, size: 18, color: Color(0xFF64748B)),
+              onPressed: () => showTaskSheet(context, ref, task),
+            ),
+            // Grip Handle
+            const Icon(Icons.drag_indicator, color: Color(0xFFCBD5E1)),
+          ],
         ),
       ),
     );

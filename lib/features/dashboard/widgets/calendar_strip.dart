@@ -26,10 +26,12 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
       if (_scrollController.hasClients) {
         // Calculate offset: Index * (ItemWidth + SeparatorWidth)
         // ItemWidth = 50, Separator = 12 => 62
-        // Center it roughly or just scroll to show it.
-        // If we want it near the end, index 13 * 62 = 806.
-        // Let's scroll to center it. 
-        final offset = (_todayIndex * 62.0) - (MediaQuery.of(context).size.width / 2) + 25;
+        // To align Today to the left edge, we simply scroll to its offset.
+        // We subtract the content padding (24) to make it flush if needed, but ListViews handle padding.
+        // Actually, jumpTo(offset) puts that offset at the leading edge.
+        // _todayIndex = 30.
+        
+        final offset = _todayIndex * 62.0; 
         _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
       }
     });
