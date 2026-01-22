@@ -53,23 +53,50 @@ class TodayTasksList extends ConsumerWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.zero,
                   itemCount: tasks.length,
-                  separatorBuilder: (c, i) => Divider(height: 12, color: Colors.grey.withValues(alpha: 0.1)),
+                  separatorBuilder: (c, i) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final task = tasks[index];
+                    final isDone = task.isCompleted;
+                    
                     return GestureDetector(
                       onTap: () async {
                         HapticFeedback.lightImpact();
                         await ref.read(todayTasksProvider(today).notifier).toggleTask(task.id, true);
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDone 
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                              : Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDone ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) : Colors.transparent,
+                          ),
+                        ),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Icon(
-                              LucideIcons.circle, 
-                              size: 18, 
-                              color: Theme.of(context).colorScheme.secondary
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDone ? Theme.of(context).colorScheme.primary : Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(7),
+                                border: Border.all(
+                                  color: isDone ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor,
+                                  width: 1.5,
+                                ),
+                                boxShadow: isDone ? [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ] : null,
+                              ),
+                              child: isDone
+                                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                  : null,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -77,8 +104,12 @@ class TodayTasksList extends ConsumerWidget {
                                 task.title,
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontWeight: isDone ? FontWeight.w500 : FontWeight.w400,
+                                  color: isDone 
+                                      ? Theme.of(context).colorScheme.primary 
+                                      : Theme.of(context).colorScheme.onSurface,
+                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  decorationColor: Theme.of(context).colorScheme.primary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -86,11 +117,19 @@ class TodayTasksList extends ConsumerWidget {
                             ),
                             if (task.formattedDueTime != null) ...[
                               const SizedBox(width: 8),
-                              Text(
-                                task.formattedDueTime!,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.secondary,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  task.formattedDueTime!,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
                                 ),
                               ),
                             ]
