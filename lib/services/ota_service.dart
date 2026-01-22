@@ -60,10 +60,30 @@ class OtaService {
 
   Future<void> tryUpdate(String url, BuildContext context) async {
     try {
-      OtaUpdate().execute(url).listen(
+      OtaUpdate().execute(url, destinationFilename: 'life_os_update.apk').listen(
         (OtaEvent event) {
-            print('OTA Status: ${event.status}, Value: ${event.value}');
-            // Optional: Update progress UI here if possible
+          switch (event.status) {
+            case OtaStatus.DOWNLOADING:
+              // For simplicity, we just log progress, but could update a state provider
+              print('OTA: Downloading ${event.value}%');
+              break;
+            case OtaStatus.INSTALLING:
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Starting installation...')));
+              break;
+            case OtaStatus.ALREADY_RUNNING_ERROR:
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update already in progress.')));
+              break;
+            case OtaStatus.PERMISSION_NOT_GRANTED_ERROR:
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission denied to install updates.')));
+              break;
+            case OtaStatus.DOWNLOAD_ERROR:
+            case OtaStatus.CHECKSUM_ERROR:
+            case OtaStatus.INTERNAL_ERROR:
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${event.status}')));
+              break;
+            default:
+              break;
+          }
         },
       );
     } catch (e) {
