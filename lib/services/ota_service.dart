@@ -60,7 +60,11 @@ class OtaService {
 
   Future<void> tryUpdate(String url, BuildContext context) async {
     try {
-      OtaUpdate().execute(url, destinationFilename: 'life_os_update.apk').listen(
+      OtaUpdate().execute(
+        url, 
+        destinationFilename: 'life_os_update.apk',
+        androidProviderAuthority: 'com.lifeos.life_os.ota_update_provider',
+      ).listen(
         (OtaEvent event) {
           switch (event.status) {
             case OtaStatus.DOWNLOADING:
