@@ -213,8 +213,7 @@ class DashboardScreen extends ConsumerWidget {
             
             // Compact Stats
             statsAsync.when(
-                // Premium Streak Counter
-                Container(
+              data: (stats) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
