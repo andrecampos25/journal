@@ -1,9 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// part 'supabase_service.g.dart';
-
 import 'package:life_os/services/offline_service.dart';
+import 'package:life_os/core/models/models.dart';
 
 class SupabaseService {
   final SupabaseClient _client;
@@ -60,7 +59,7 @@ class SupabaseService {
   // --- Daily Entries (Journal + Mood) ---
   
   // Get today's entry
-  Future<Map<String, dynamic>?> getDailyEntry(DateTime date) async {
+  Future<DailyEntry?> getDailyEntry(DateTime date) async {
     final dateStr = date.toIso8601String().split('T')[0];
     final cacheKey = 'daily_entry_$dateStr';
 
@@ -75,18 +74,19 @@ class SupabaseService {
             
         if (response != null) {
           await _offlineService.cacheData(cacheKey, response);
+          return DailyEntry.fromMap(response);
         }
-        return response;
+        return null;
       } else {
         // Offline: Try Cache
         final cached = _offlineService.getCachedData(cacheKey);
-        if (cached != null) return Map<String, dynamic>.from(cached);
+        if (cached != null) return DailyEntry.fromMap(Map<String, dynamic>.from(cached));
         return null;
       }
     } catch (e) {
       // Fallback
       final cached = _offlineService.getCachedData(cacheKey);
-      if (cached != null) return Map<String, dynamic>.from(cached);
+      if (cached != null) return DailyEntry.fromMap(Map<String, dynamic>.from(cached));
       return null;
     }
   }
@@ -146,12 +146,13 @@ class SupabaseService {
   }
 
   // Get all journal entries (history)
-  Future<List<Map<String, dynamic>>> getJournalHistory() async {
-    return await _client
+  Future<List<DailyEntry>> getJournalHistory() async {
+    final response = await _client
         .from('daily_entries')
         .select()
         .eq('user_id', userId)
         .order('entry_date', ascending: false);
+    return (response as List).map((e) => DailyEntry.fromMap(e)).toList();
   }
 
   // --- Habits ---
@@ -267,7 +268,7 @@ class SupabaseService {
     const activeCacheKey = 'habits_active';
     const allCacheKey = 'habits_all';
 
-    void updateInList(String key) async {
+    Future<void> updateInList(String key) async {
        final list = List<Map<String, dynamic>>.from(_offlineService.getCachedData(key) ?? []);
        final index = list.indexWhere((h) => h['id'] == id);
        if (index != -1) {
@@ -280,8 +281,8 @@ class SupabaseService {
          await _offlineService.cacheData(key, list);
        }
     }
-    updateInList(activeCacheKey);
-    updateInList(allCacheKey);
+    await updateInList(activeCacheKey);
+    await updateInList(allCacheKey);
   }
 
   // Archive/Unarchive Habit
@@ -427,7 +428,7 @@ class SupabaseService {
   // --- Tasks ---
 
   // Get tasks due today or overdue
-  Future<List<Map<String, dynamic>>> getTodayTasks(DateTime date) async {
+  Future<List<Task>> getTodayTasks(DateTime date) async {
     final dateStr = date.toIso8601String().split('T')[0];
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String();
     final cacheKey = 'tasks_today_$dateStr';
@@ -439,32 +440,36 @@ class SupabaseService {
             .select()
             .eq('user_id', userId)
             .eq('is_completed', false)
-            .lte('due_date', endOfDay) // Due today or earlier (overdue)
+            .lte('due_date', endOfDay)
             .order('due_date');
             
         await _offlineService.cacheData(cacheKey, response);
-        return List<Map<String, dynamic>>.from(response);
+        return (response as List).map((e) => Task.fromMap(e)).toList();
       } else {
         final cached = _offlineService.getCachedData(cacheKey);
-        if (cached != null) return List<Map<String, dynamic>>.from(cached);
+        if (cached != null) {
+          return (cached as List).map((e) => Task.fromMap(Map<String, dynamic>.from(e))).toList();
+        }
         return [];
       }
     } catch (e) {
       final cached = _offlineService.getCachedData(cacheKey);
-      if (cached != null) return List<Map<String, dynamic>>.from(cached);
+      if (cached != null) {
+        return (cached as List).map((e) => Task.fromMap(Map<String, dynamic>.from(e))).toList();
+      }
       return [];
     }
   }
 
   // Get ALL active tasks (for management)
-  Future<List<Map<String, dynamic>>> getAllActiveTasks() async {
-    return await _client
+  Future<List<Task>> getAllActiveTasks() async {
+    final response = await _client
         .from('tasks')
         .select()
         .eq('user_id', userId)
         .eq('is_completed', false)
-        .order('due_date'); // Show soonest due first
-        // We could also show completed ones separately
+        .order('due_date');
+    return (response as List).map((e) => Task.fromMap(e)).toList();
   }
 
   // Create Task
@@ -610,7 +615,7 @@ class SupabaseService {
       } catch (e) {
         // Keep in queue if failed? Or skip?
         // simple retry next time
-        print('Sync failed for ${mutation['id']}: $e');
+        // Sync failed, will retry next time
       }
     }
   }

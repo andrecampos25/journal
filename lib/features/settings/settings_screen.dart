@@ -40,13 +40,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final offlineService = ref.watch(offlineServiceProvider);
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Settings', style: GoogleFonts.lexend(color: const Color(0xFF1E293B))),
+        title: Text('Settings', style: GoogleFonts.lexend(color: Theme.of(context).colorScheme.onSurface)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -76,11 +76,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 24),
           _buildSectionHeader('Security'),
            ListTile(
-            tileColor: Colors.white,
+            tileColor: Theme.of(context).cardColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            leading: const Icon(LucideIcons.lock, color: Color(0xFF64748B)),
+            leading: Icon(LucideIcons.lock, color: Theme.of(context).colorScheme.secondary),
             title: Text('Change PIN', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.secondary),
             onTap: () {
               HapticFeedback.lightImpact();
               _showChangePinDialog(context);
@@ -90,22 +90,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 24),
           _buildSectionHeader('System'),
           ListTile(
-            tileColor: Colors.white,
+            tileColor: Theme.of(context).cardColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            leading: const Icon(LucideIcons.downloadCloud, color: Color(0xFF64748B)),
+            leading: Icon(LucideIcons.downloadCloud, color: Theme.of(context).colorScheme.secondary),
             title: Text('Check for Updates', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.secondary),
             onTap: () {
               ref.read(otaServiceProvider).checkForUpdates(context);
             },
           ),
           const SizedBox(height: 12),
           ListTile(
-            tileColor: Colors.white,
+            tileColor: Theme.of(context).cardColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            leading: const Icon(LucideIcons.info, color: Color(0xFF64748B)),
+            leading: Icon(LucideIcons.info, color: Theme.of(context).colorScheme.secondary),
             title: Text('Version', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-            trailing: Text(_version, style: GoogleFonts.inter(color: Colors.grey)),
+            trailing: Text(_version, style: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary)),
           ),
         ],
       ),
@@ -181,7 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN changed successfully')));
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1E293B)),
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
             child: Text('Update', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
           ),
         ],
@@ -209,7 +209,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2)),

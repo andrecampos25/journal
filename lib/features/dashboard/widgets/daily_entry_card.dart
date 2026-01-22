@@ -58,12 +58,12 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
     // Listen to data changes to update local state ONCE
     ref.listen(dailyEntryProvider(today), (previous, next) {
       if (next.hasValue && next.value != null) {
-        final data = next.value!;
+        final entry = next.value!;
         if (mounted) {
            setState(() {
-             if (data['mood_score'] != null) _moodValue = (data['mood_score'] as int).toDouble();
-             if (data['journal_text'] != null && _journalController.text.isEmpty) {
-                _journalController.text = data['journal_text'] as String;
+             if (entry.moodScore != null) _moodValue = entry.moodScore!.toDouble();
+             if (entry.journalText != null && _journalController.text.isEmpty) {
+                _journalController.text = entry.journalText!;
              }
              _isLoading = false;
            });
@@ -77,16 +77,16 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: Theme.of(context).cardColor.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF94A3B8).withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: Theme.of(context).dividerColor, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +100,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
                 style: GoogleFonts.lexend(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1E293B),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               AnimatedContainer(
@@ -125,7 +125,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
               sliderTheme: SliderThemeData(
                 trackHeight: 12,
                 activeTrackColor: moodColor,
-                inactiveTrackColor: const Color(0xFFF1F5F9),
+                inactiveTrackColor: Theme.of(context).colorScheme.surface,
                 thumbColor: Colors.white,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14, elevation: 4),
                 overlayColor: moodColor.withValues(alpha: 0.2),
@@ -150,9 +150,9 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: TextField(
                 onChanged: (text) => _save(today),
@@ -160,12 +160,12 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
                 maxLines: null,
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: const Color(0xFF334155),
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.5,
                 ),
                 decoration: InputDecoration(
                   hintText: 'What\'s on your mind today?',
-                  hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8)),
+                  hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),

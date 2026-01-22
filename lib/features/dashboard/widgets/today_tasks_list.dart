@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
+import 'package:life_os/core/models/models.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class TodayTasksList extends ConsumerWidget {
@@ -30,10 +31,10 @@ class TodayTasksList extends ConsumerWidget {
                   style: GoogleFonts.lexend(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1E293B),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
-                const Icon(LucideIcons.listTodo, size: 18, color: Color(0xFF94A3B8)),
+                Icon(LucideIcons.listTodo, size: 18, color: Theme.of(context).colorScheme.secondary),
               ],
             ),
             const SizedBox(height: 12),
@@ -58,38 +59,38 @@ class TodayTasksList extends ConsumerWidget {
                     return GestureDetector(
                       onTap: () async {
                         HapticFeedback.lightImpact();
-                        await ref.read(todayTasksProvider(today).notifier).toggleTask(task['id'], true);
+                        await ref.read(todayTasksProvider(today).notifier).toggleTask(task.id, true);
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               LucideIcons.circle, 
                               size: 18, 
-                              color: Color(0xFF94A3B8)
+                              color: Theme.of(context).colorScheme.secondary
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                task['title'] ?? 'Untitled',
+                                task.title,
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: const Color(0xFF334155),
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (task['due_date'] != null) ...[
+                            if (task.formattedDueTime != null) ...[
                               const SizedBox(width: 8),
                               Text(
-                                (task['due_date'] as String).substring(11, 16),
+                                task.formattedDueTime!,
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
-                                  color: const Color(0xFF94A3B8),
+                                  color: Theme.of(context).colorScheme.secondary,
                                 ),
                               ),
                             ]

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
+import 'package:life_os/core/models/models.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
@@ -27,20 +28,20 @@ class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
     final historyAsync = ref.watch(journalHistoryProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Journal History',
           style: GoogleFonts.lexend(
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         bottom: PreferredSize(
@@ -54,7 +55,7 @@ class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
                 hintText: 'Search memories...',
                 prefixIcon: const Icon(LucideIcons.search, size: 18),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).cardColor,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -70,8 +71,8 @@ class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (entries) {
           final filteredEntries = entries.where((e) {
-            final text = (e['journal_text'] as String?)?.toLowerCase() ?? '';
-            final date = DateFormat('MMMM d, y').format(DateTime.parse(e['entry_date'])).toLowerCase();
+            final text = e.journalText?.toLowerCase() ?? '';
+            final date = DateFormat('MMMM d, y').format(e.entryDate).toLowerCase();
             return text.contains(_searchQuery) || date.contains(_searchQuery);
           }).toList();
 
@@ -104,21 +105,17 @@ class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
 }
 
 class _JournalEntryTile extends StatelessWidget {
-  final Map<String, dynamic> entry;
+  final DailyEntry entry;
   const _JournalEntryTile({required this.entry});
 
   @override
   Widget build(BuildContext context) {
-    final date = DateTime.parse(entry['entry_date']);
-    final mood = entry['mood_score'] as int?;
-    final journal = entry['journal_text'] as String?;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -134,26 +131,26 @@ class _JournalEntryTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                DateFormat('MMMM d, y').format(date),
+                DateFormat('MMMM d, y').format(entry.entryDate),
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1E293B),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              if (mood != null)
+              if (entry.moodScore != null)
                 Text(
-                  _getMoodEmoji(mood.toDouble()),
+                  entry.moodEmoji,
                   style: const TextStyle(fontSize: 18),
                 ),
             ],
           ),
-          if (journal != null && journal.isNotEmpty) ...[
+          if (entry.journalText != null && entry.journalText!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              journal,
+              entry.journalText!,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: const Color(0xFF475569),
+                color: Theme.of(context).colorScheme.secondary,
                 height: 1.5,
               ),
               maxLines: 4,
@@ -163,13 +160,5 @@ class _JournalEntryTile extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _getMoodEmoji(double value) {
-    if (value <= 2) return '😢';
-    if (value <= 4) return '😕';
-    if (value <= 6) return '😐';
-    if (value <= 8) return '🙂';
-    return '😁';
   }
 }

@@ -182,7 +182,7 @@ class DashboardScreen extends ConsumerWidget {
               style: GoogleFonts.lexend(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             Text(
@@ -202,10 +202,10 @@ class DashboardScreen extends ConsumerWidget {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.settings, size: 20, color: Color(0xFF64748B)),
+            child: Icon(LucideIcons.settings, size: 20, color: Theme.of(context).colorScheme.secondary),
           ),
         ),
       ],
@@ -213,14 +213,23 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildNavigationCard(BuildContext context) {
-     return Container(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
+        color: isDark 
+            ? const Color(0xFF1E293B).withValues(alpha: 0.9)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.5),
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF94A3B8).withValues(alpha: 0.15),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : const Color(0xFF94A3B8).withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -262,7 +271,7 @@ class _NavButton extends StatelessWidget {
         onTap();
       },
       behavior: HitTestBehavior.opaque,
-      child: Icon(icon, color: const Color(0xFF1E293B), size: 26),
+      child: Icon(icon, color: Theme.of(context).colorScheme.onSurface, size: 26),
     );
   }
 }
@@ -298,7 +307,39 @@ class _StatsRow extends ConsumerWidget {
           ],
         ),
         loading: () => const SizedBox(height: 48),
-        error: (e, s) => const SizedBox(),
+        error: (e, s) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(LucideIcons.alertCircle, size: 16, color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 8),
+              Text(
+                'Stats unavailable',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => ref.invalidate(userStatsProvider),
+                child: Text(
+                  'Retry',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

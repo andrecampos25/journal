@@ -76,16 +76,20 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
               width: 50, // Reduced from 56
               decoration: BoxDecoration(
                 color: isSelected 
-                    ? const Color(0xFF1E293B) 
-                    : (isToday ? Colors.white.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.5)),
+                    ? Theme.of(context).colorScheme.primary
+                    : (isToday 
+                        ? Theme.of(context).cardColor.withValues(alpha: 0.8) 
+                        : Theme.of(context).cardColor.withValues(alpha: 0.5)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isSelected 
                       ? Colors.transparent 
-                      : (isToday ? const Color(0xFF1E293B).withValues(alpha: 0.1) : Colors.transparent),
+                      : (isToday ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent),
                 ),
                 boxShadow: isSelected 
-                   ? [BoxShadow(color: const Color(0xFF1E293B).withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                   ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                   : [],
+              ),
                    : [],
               ),
               child: Column(
@@ -96,7 +100,9 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
                      style: GoogleFonts.inter(
                        fontSize: 10,
                        fontWeight: FontWeight.w600,
-                       color: isSelected ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF64748B),
+                       color: isSelected 
+                           ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.6) 
+                           : Theme.of(context).colorScheme.secondary,
                      ),
                    ),
                    const SizedBox(height: 6),
@@ -105,7 +111,9 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
                      style: GoogleFonts.lexend(
                        fontSize: 16,
                        fontWeight: FontWeight.w700,
-                       color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                       color: isSelected 
+                           ? Theme.of(context).colorScheme.onPrimary 
+                           : Theme.of(context).colorScheme.onSurface,
                      ),
                    ),
                 ],

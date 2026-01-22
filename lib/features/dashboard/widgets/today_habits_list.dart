@@ -6,14 +6,6 @@ import 'package:life_os/features/habits/habit_details_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
-import 'package:life_os/services/supabase_service.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:life_os/features/dashboard/dashboard_providers.dart';
-import 'package:life_os/services/supabase_service.dart';
 import 'package:confetti/confetti.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'dart:math';
@@ -67,10 +59,10 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                       style: GoogleFonts.lexend(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1E293B),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    const Icon(LucideIcons.checkCircle2, size: 18, color: Color(0xFF94A3B8)),
+                    Icon(LucideIcons.checkCircle2, size: 18, color: Theme.of(context).colorScheme.secondary),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -104,7 +96,9 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                             duration: 300.ms,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isDone ? const Color(0xFFECFDF5) : Colors.black.withValues(alpha: 0.02),
+                              color: isDone 
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                                  : Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isDone ? const Color(0xFF10B981).withValues(alpha: 0.3) : Colors.transparent,
@@ -114,25 +108,53 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                             children: [
                                GestureDetector(
                                 onTap: () async {
-                                   HapticFeedback.lightImpact();
+                                   HapticFeedback.mediumImpact(); // Stronger haptic
                                    if (!isDone) _playConfetti(); 
                                    await ref.read(todayHabitsProvider(today).notifier).toggleHabit(habit.id, !isDone);
                                 },
                                  child: AnimatedContainer(
                                   duration: 200.ms,
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    color: isDone ? const Color(0xFF10B981) : Colors.white,
+                                  width: 24,
+                                  height: 24,
+                                   decoration: BoxDecoration(
+                                    color: isDone ? const Color(0xFF10B981) : Theme.of(context).cardColor,
                                     borderRadius: BorderRadius.circular(7),
                                     border: Border.all(
-                                      color: isDone ? const Color(0xFF10B981) : const Color(0xFFCBD5E1),
+                                      color: isDone ? const Color(0xFF10B981) : Theme.of(context).dividerColor,
                                       width: 1.5,
                                     ),
+                                    boxShadow: isDone ? [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ] : null,
                                   ),
                                   child: isDone
                                       ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                          .animate()
+                                          .scale(
+                                            begin: const Offset(0, 0),
+                                            end: const Offset(1, 1),
+                                            duration: 200.ms,
+                                            curve: Curves.elasticOut,
+                                          )
                                       : null,
+                                )
+                                .animate(target: isDone ? 1 : 0)
+                                .scale(
+                                  begin: const Offset(1, 1),
+                                  end: const Offset(1.15, 1.15),
+                                  duration: 150.ms,
+                                  curve: Curves.easeOut,
+                                )
+                                .then()
+                                .scale(
+                                  begin: const Offset(1.15, 1.15),
+                                  end: const Offset(1, 1),
+                                  duration: 100.ms,
+                                  curve: Curves.easeIn,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -155,7 +177,9 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: isDone ? FontWeight.w500 : FontWeight.w400,
-                                            color: isDone ? const Color(0xFF047857) : const Color(0xFF334155),
+                                            color: isDone 
+                                                ? const Color(0xFF047857) 
+                                                : Theme.of(context).colorScheme.onSurface,
                                             decoration: isDone ? TextDecoration.lineThrough : null,
                                             decorationColor: const Color(0xFF10B981),
                                           ),

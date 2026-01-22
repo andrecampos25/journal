@@ -15,28 +15,28 @@ class TaskManagementScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(allTasksProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Manage Tasks',
           style: GoogleFonts.lexend(
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showTaskDialog(context, ref),
-        backgroundColor: const Color(0xFF1E293B),
-        icon: const Icon(LucideIcons.plus, color: Colors.white),
-        label: Text('New Task', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        icon: Icon(LucideIcons.plus, color: Theme.of(context).colorScheme.onPrimary),
+        label: Text('New Task', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)),
       ),
       body: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -153,7 +153,7 @@ class TaskManagementScreen extends ConsumerWidget {
                      if (context.mounted) Navigator.pop(context);
                   }
                 },
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1E293B)),
+                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
                 child: Text('Save', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
               ),
             ],
@@ -175,9 +175,9 @@ class _TaskTile extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -186,9 +186,8 @@ class _TaskTile extends ConsumerWidget {
           ),
         ],
       ),
-      child: ListTile(
         leading: IconButton(
-          icon: const Icon(LucideIcons.circle, color: Color(0xFF94A3B8)),
+          icon: Icon(LucideIcons.circle, color: Theme.of(context).colorScheme.secondary),
           onPressed: () async {
              HapticFeedback.lightImpact();
              final service = ref.read(supabaseServiceProvider);
@@ -201,7 +200,7 @@ class _TaskTile extends ConsumerWidget {
           task['title'],
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF1E293B),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: dueDate != null ? Text(
@@ -212,7 +211,7 @@ class _TaskTile extends ConsumerWidget {
           ),
         ) : null,
         trailing: PopupMenuButton(
-          icon: const Icon(LucideIcons.moreVertical, size: 18, color: Color(0xFF94A3B8)),
+          icon: Icon(LucideIcons.moreVertical, size: 18, color: Theme.of(context).colorScheme.secondary),
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'edit', child: Text('Edit')),
             const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),

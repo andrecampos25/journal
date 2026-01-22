@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/services/supabase_service.dart';
 import 'package:life_os/core/utils/gamification_logic.dart';
+import 'package:life_os/core/models/models.dart';
 
 // --- Gamification ---
 
@@ -21,7 +22,6 @@ class UserStats {
 
 final userStatsProvider = FutureProvider<UserStats>((ref) async {
   final service = ref.watch(supabaseServiceProvider);
-  await service.signIn();
 
   final activityDates = await service.getHabitActivityDates();
   final streak = GamificationLogic.calculateStreak(activityDates);
@@ -43,17 +43,14 @@ final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
 // --- Daily Entry ---
 
-final dailyEntryProvider = FutureProvider.family<Map<String, dynamic>?, DateTime>((ref, date) async {
+final dailyEntryProvider = FutureProvider.family<DailyEntry?, DateTime>((ref, date) async {
   final service = ref.watch(supabaseServiceProvider);
-  // Ensure we are signed in
-  await service.signIn(); 
   return service.getDailyEntry(date);
 });
 
 // Journal History
-final journalHistoryProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final journalHistoryProvider = FutureProvider<List<DailyEntry>>((ref) async {
   final service = ref.watch(supabaseServiceProvider);
-  await service.signIn();
   return service.getJournalHistory();
 });
 
@@ -78,7 +75,6 @@ class TodayHabitsNotifier extends FamilyAsyncNotifier<List<HabitView>, DateTime>
   @override
   Future<List<HabitView>> build(DateTime arg) async {
     final service = ref.watch(supabaseServiceProvider);
-    await service.signIn();
 
     final habits = await service.getHabits();
     final completedIds = await service.getTodayHabitLogIds(arg);
@@ -125,39 +121,36 @@ class TodayHabitsNotifier extends FamilyAsyncNotifier<List<HabitView>, DateTime>
 // All habits for management
 final allHabitsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final service = ref.watch(supabaseServiceProvider);
-  await service.signIn();
   return service.getAllHabits();
 });
 
 // --- Tasks ---
 
 // Tasks Provider with Optimistic Updates
-final todayTasksProvider = AsyncNotifierProviderFamily<TodayTasksNotifier, List<Map<String, dynamic>>, DateTime>(() {
+final todayTasksProvider = AsyncNotifierProviderFamily<TodayTasksNotifier, List<Task>, DateTime>(() {
   return TodayTasksNotifier();
 });
 
-class TodayTasksNotifier extends FamilyAsyncNotifier<List<Map<String, dynamic>>, DateTime> {
+class TodayTasksNotifier extends FamilyAsyncNotifier<List<Task>, DateTime> {
   @override
-  Future<List<Map<String, dynamic>>> build(DateTime arg) async {
+  Future<List<Task>> build(DateTime arg) async {
     final service = ref.watch(supabaseServiceProvider);
-    await service.signIn();
     return service.getTodayTasks(arg);
   }
 
   Future<void> toggleTask(String id, bool isCompleted) async {
     final previousState = state.value;
 
-    // Optimistic Update (Remove if completed, or just update flag)
+    // Optimistic Update
     if (state.hasValue) {
        state = AsyncValue.data(
-         state.value!.map((t) => t['id'] == id ? {...t, 'is_completed': isCompleted} : t).toList()
+         state.value!.map((t) => t.id == id ? t.copyWith(isCompleted: isCompleted) : t).toList()
        );
     }
 
     try {
       await ref.read(supabaseServiceProvider).toggleTaskCompletion(id, isCompleted);
       ref.invalidate(userStatsProvider);
-      // Invalidate all tasks too
       ref.invalidate(allTasksProvider);
     } catch (e) {
       state = AsyncValue.data(previousState!);
@@ -166,8 +159,7 @@ class TodayTasksNotifier extends FamilyAsyncNotifier<List<Map<String, dynamic>>,
 }
 
 // All active tasks for management
-final allTasksProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final allTasksProvider = FutureProvider<List<Task>>((ref) async {
   final service = ref.watch(supabaseServiceProvider);
-  await service.signIn();
   return service.getAllActiveTasks();
 });

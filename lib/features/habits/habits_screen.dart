@@ -17,28 +17,28 @@ class HabitsManagementScreen extends ConsumerWidget {
     final habitsAsync = ref.watch(allHabitsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Manage Habits',
           style: GoogleFonts.lexend(
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF1E293B),
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showHabitDialog(context, ref),
-        backgroundColor: const Color(0xFF1E293B),
-        icon: const Icon(LucideIcons.plus, color: Colors.white),
-        label: Text('New Habit', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        icon: Icon(LucideIcons.plus, color: Theme.of(context).colorScheme.onPrimary),
+        label: Text('New Habit', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)),
       ),
       body: habitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -274,9 +274,9 @@ class _HabitTile extends ConsumerWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -300,7 +300,7 @@ class _HabitTile extends ConsumerWidget {
           habit['title'],
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
-            color: isArchived ? Colors.grey : const Color(0xFF1E293B),
+            color: isArchived ? Colors.grey : Theme.of(context).colorScheme.onSurface,
             decoration: isArchived ? TextDecoration.lineThrough : null,
           ),
         ),

@@ -17,13 +17,13 @@ class HabitDetailsScreen extends ConsumerWidget {
     final logsAsync = ref.watch(habitLogsProvider(habitId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Row(
@@ -33,7 +33,7 @@ class HabitDetailsScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               habit['title'],
-              style: GoogleFonts.lexend(fontWeight: FontWeight.w600, color: const Color(0xFF1E293B)),
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -70,9 +70,11 @@ class HabitDetailsScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF475569)),
+    return Builder(
+      builder: (context) => Text(
+        title,
+        style: GoogleFonts.lexend(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.secondary),
+      ),
     );
   }
 
@@ -112,33 +114,35 @@ class HabitDetailsScreen extends ConsumerWidget {
       return {'date': date, 'done': isCompleted};
     });
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
-      ),
-      child: AspectRatio(
-        aspectRatio: 2.5,
-        child: GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7, // 7 days of week
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 6,
+    return Builder(
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+        ),
+        child: AspectRatio(
+          aspectRatio: 2.5,
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7, // 7 days of week
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+            ),
+            itemCount: days.length,
+            itemBuilder: (context, index) {
+              final day = days[index];
+              final isDone = day['done'] as bool;
+              return Container(
+                decoration: BoxDecoration(
+                  color: isDone ? const Color(0xFF10B981) : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            },
           ),
-          itemCount: days.length,
-          itemBuilder: (context, index) {
-            final day = days[index];
-            final isDone = day['done'] as bool;
-            return Container(
-              decoration: BoxDecoration(
-                color: isDone ? const Color(0xFF10B981) : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            );
-          },
         ),
       ),
     );
@@ -146,25 +150,27 @@ class HabitDetailsScreen extends ConsumerWidget {
 
   Widget _buildHistoryTile(String dateStr) {
     final date = DateTime.parse(dateStr);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-         color: Colors.white,
-         borderRadius: BorderRadius.circular(12),
-         border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        children: [
-          const Icon(LucideIcons.calendarCheck, size: 16, color: Color(0xFF10B981)),
-          const SizedBox(width: 12),
-          Text(
-            DateFormat('EEEE, MMMM d').format(date),
-            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF1E293B)),
-          ),
-          const Spacer(),
-          Text('Done', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
-        ],
+    return Builder(
+      builder: (context) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+           color: Theme.of(context).cardColor,
+           borderRadius: BorderRadius.circular(12),
+           border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.calendarCheck, size: 16, color: Color(0xFF10B981)),
+            const SizedBox(width: 12),
+            Text(
+              DateFormat('EEEE, MMMM d').format(date),
+              style: GoogleFonts.inter(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const Spacer(),
+            Text('Done', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
+          ],
+        ),
       ),
     );
   }
@@ -190,9 +196,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,13 +209,13 @@ class _StatCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(value, style: GoogleFonts.lexend(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B))),
+              Text(value, style: GoogleFonts.lexend(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(width: 4),
-              Text(subvalue, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+              Text(subvalue, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
             ],
           ),
           const SizedBox(height: 4),
-          Text(label, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B))),
+          Text(label, style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
         ],
       ),
     );

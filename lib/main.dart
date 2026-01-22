@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:life_os/core/theme/app_theme.dart';
 import 'package:life_os/features/lockscreen/pin_screen.dart';
@@ -29,6 +28,12 @@ void main() async {
   // Initialize OfflineService
   final offlineService = OfflineService();
   await offlineService.init();
+
+  // Sign in to Supabase once at startup
+  final session = Supabase.instance.client.auth.currentSession;
+  if (session == null) {
+    await Supabase.instance.client.auth.signInAnonymously();
+  }
 
   runApp(ProviderScope(
     overrides: [
