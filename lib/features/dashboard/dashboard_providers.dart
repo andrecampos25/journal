@@ -239,7 +239,27 @@ class TodayTasksNotifier extends FamilyAsyncNotifier<List<Task>, DateTime> {
     try {
       final service = ref.read(supabaseServiceProvider);
       final tasks = await service.getTodayTasks(arg, forceRefresh: true);
-      state = AsyncValue.data(tasks);
+      
+      // Rebuild the mixed view logic
+      final allActive = await service.getAllActiveTasks();
+      final todayIds = tasks.map((t) => t.id).toSet();
+      final backlog = allActive.where((t) => !todayIds.contains(t.id)).toList();
+      
+      List<Task> result = [];
+      
+      if (tasks.isEmpty) {
+        result.addAll(backlog.take(3));
+      } else if (tasks.length == 1) {
+        result.addAll(backlog.take(2));
+        result.add(tasks[0]);
+      } else if (tasks.length == 2) {
+        result.addAll(backlog.take(1));
+        result.addAll(tasks);
+      } else {
+        result.addAll(tasks);
+      }
+      
+      state = AsyncValue.data(result);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

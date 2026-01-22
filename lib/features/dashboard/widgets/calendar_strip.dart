@@ -26,11 +26,11 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
       if (_scrollController.hasClients) {
         // Calculate offset: Index * (ItemWidth + SeparatorWidth)
         // ItemWidth = 50, Separator = 12 => 62
-        // To align Today to the left edge, we must account for the start padding (24).
+        // To align Today to the left edge, we must account for the start padding (16).
         // Offset = Padding + (Index * ItemExtent)
-        // 24 + (30 * 62) = 1884.
+        // 16 + (30 * 62) = 1876.
         
-        final offset = 24.0 + (_todayIndex * 62.0);
+        final offset = 16.0 + (_todayIndex * 62.0);
         _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
       }
     });
@@ -54,7 +54,7 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
       height: 70, // Reduced from 85
       child: ListView.separated(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         itemCount: days.length,
         separatorBuilder: (context, index) => const SizedBox(width: 12),
