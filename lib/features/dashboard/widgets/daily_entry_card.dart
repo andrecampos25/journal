@@ -95,7 +95,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
            child: Container(
              padding: const EdgeInsets.all(20),
              decoration: BoxDecoration(
-               color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.7),
+               color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4),
                borderRadius: BorderRadius.circular(32),
                border: Border.all(
                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4),

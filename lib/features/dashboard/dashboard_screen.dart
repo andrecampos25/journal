@@ -112,6 +112,50 @@ class DashboardScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Tasks & Habits Combined Card
+                          Container(
+                             decoration: BoxDecoration(
+                               borderRadius: BorderRadius.circular(32),
+                               boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? Colors.black.withValues(alpha: 0.3) 
+                                        : const Color(0xFF94A3B8).withValues(alpha: 0.15),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
+                               ],
+                             ),
+                             child: ClipRRect(
+                               borderRadius: BorderRadius.circular(32),
+                               child: BackdropFilter(
+                                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                 child: Container(
+                                   decoration: BoxDecoration(
+                                     color: Theme.of(context).brightness == Brightness.dark 
+                                         ? const Color(0xFF1E293B).withValues(alpha: 0.5) 
+                                         : Colors.white.withValues(alpha: 0.4),
+                                     borderRadius: BorderRadius.circular(32),
+                                     border: Border.all(
+                                       color: Theme.of(context).brightness == Brightness.dark 
+                                           ? Colors.white.withValues(alpha: 0.1) 
+                                           : Colors.white.withValues(alpha: 0.4),
+                                     ),
+                                   ),
+                                   child: Column(
+                                     children: [
+                                       const TodayTasksList(),
+                                       Divider(color: Colors.grey.withValues(alpha: 0.1), height: 1),
+                                       const TodayHabitsList(),
+                                     ],
+                                   ),
+                                 ),
+                               ),
+                             ),
+                          ),
+  
+                          const SizedBox(height: 24),
+  
                           // Daily Entry
                           const SizedBox(
                             height: 300,
@@ -227,8 +271,8 @@ class DashboardScreen extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: isDark 
-            ? const Color(0xFF1E293B).withValues(alpha: 0.9)
-            : Colors.white.withValues(alpha: 0.8),
+            ? const Color(0xFF1E293B).withValues(alpha: 0.6)
+            : Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: isDark 
