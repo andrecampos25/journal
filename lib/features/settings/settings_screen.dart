@@ -6,6 +6,7 @@ import 'package:life_os/services/offline_service.dart';
 import 'package:life_os/services/ota_service.dart';
 import 'package:life_os/core/theme/app_theme.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -16,6 +17,22 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isSyncing = false;
+  String _version = 'Loading...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = info.version;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +103,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             leading: const Icon(LucideIcons.info, color: Color(0xFF64748B)),
             title: Text('Version', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-            trailing: Text('1.0.0', style: GoogleFonts.inter(color: Colors.grey)),
+            trailing: Text(_version, style: GoogleFonts.inter(color: Colors.grey)),
           ),
         ],
       ),
