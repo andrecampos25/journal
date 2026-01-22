@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:life_os/core/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:life_os/core/models/models.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:life_os/services/supabase_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:life_os/features/tasks/widgets/task_creation_dialog.dart';
+import 'package:life_os/features/tasks/widgets/task_creation_sheet.dart';
 import 'package:intl/intl.dart';
 
 class TaskManagementScreen extends ConsumerWidget {
@@ -35,10 +35,7 @@ class TaskManagementScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showDialog(
-          context: context,
-          builder: (context) => const TaskCreationDialog(),
-        ),
+        onPressed: () => showTaskSheet(context, ref),
         backgroundColor: Theme.of(context).colorScheme.primary,
         icon: Icon(LucideIcons.plus, color: Theme.of(context).colorScheme.onPrimary),
         label: Text('New Task', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)),
@@ -60,16 +57,24 @@ class TaskManagementScreen extends ConsumerWidget {
              );
           }
 
-          return ListView.separated(
+          return ListView.builder(
              padding: const EdgeInsets.all(16),
              itemCount: tasks.length,
-             separatorBuilder: (c, i) => const SizedBox(height: 12),
              itemBuilder: (context, index) => _TaskTile(task: tasks[index]),
           );
         },
       ),
     );
   }
+}
+
+void showTaskSheet(BuildContext context, WidgetRef ref, [Task? task]) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => TaskCreationSheet(task: task),
+  );
 }
 
 class _TaskTile extends ConsumerWidget {
@@ -82,6 +87,7 @@ class _TaskTile extends ConsumerWidget {
     final isOverdue = task.isOverdue;
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -95,48 +101,51 @@ class _TaskTile extends ConsumerWidget {
         ],
       ),
       child: ListTile(
-        leading: IconButton(
-          icon: Icon(LucideIcons.circle, color: Theme.of(context).colorScheme.secondary),
-          onPressed: () async {
+        leading: GestureDetector(
+          onTap: () async {
              HapticFeedback.lightImpact();
              final service = ref.read(supabaseServiceProvider);
              await service.toggleTaskCompletion(task.id, true);
              ref.invalidate(allTasksProvider);
              ref.invalidate(todayTasksProvider(DateTime.now()));
-          }
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
+            ),
+            child: Icon(LucideIcons.circle, color: Theme.of(context).colorScheme.primary, size: 20),
+          ),
         ),
         title: Text(
           task.title,
           style: GoogleFonts.inter(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        subtitle: dueDate != null ? Text(
-          DateFormat('MMM d, h:mm a').format(dueDate),
-          style: GoogleFonts.inter(
-            color: isOverdue ? Colors.redAccent : const Color(0xFF64748B),
-            fontSize: 12,
-          ),
-        ) : null,
-        trailing: PopupMenuButton(
-          icon: Icon(LucideIcons.moreVertical, size: 18, color: Theme.of(context).colorScheme.secondary),
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'edit', child: Text('Edit')),
-            const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+        subtitle: dueDate != null ? Row(
+          children: [
+            Icon(LucideIcons.calendar, size: 12, color: isOverdue ? Colors.redAccent : const Color(0xFF64748B)),
+            const SizedBox(width: 4),
+            Text(
+              DateFormat('MMM d, h:mm a').format(dueDate),
+              style: GoogleFonts.inter(
+                color: isOverdue ? Colors.redAccent : const Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
-          onSelected: (value) async {
-            if (value == 'edit') {
-               showDialog(
-                 context: context,
-                 builder: (context) => TaskCreationDialog(task: task),
-               );
-            } else if (value == 'delete') {
-               final service = ref.read(supabaseServiceProvider);
-               await service.deleteTask(task.id);
-               ref.invalidate(allTasksProvider);
-               ref.invalidate(todayTasksProvider(DateTime.now()));
-            }
+        ) : null,
+        trailing: IconButton(
+          icon: const Icon(LucideIcons.moreVertical, size: 18, color: Color(0xFF64748B)),
+          onPressed: () {
+            showTaskSheet(context, ref, task);
           },
         ),
       ),
