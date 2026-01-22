@@ -137,9 +137,9 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                 .animate(target: _isError ? 1 : 0)
                 .shake(duration: 400.ms, hz: 4)
                 .tint(color: Colors.red.withValues(alpha: 0.1)),
-            const Spacer(),
+            const SizedBox(height: 32),
             _buildKeypad(),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
           ],
         ),
       ),

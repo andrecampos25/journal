@@ -13,8 +13,8 @@ class CalendarStrip extends ConsumerStatefulWidget {
 
 class _CalendarStripState extends ConsumerState<CalendarStrip> {
   late ScrollController _scrollController;
-  // We'll generate a list of 14 days ending today (index 13) + 1 tomorrow (index 14)
-  final int _todayIndex = 13; 
+  // We'll generate a list of 61 days: 30 days past + Today + 30 days future
+  final int _todayIndex = 30; 
 
   @override
   void initState() {
@@ -46,8 +46,8 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
     final selectedDate = ref.watch(selectedDateProvider);
     final now = DateTime.now();
 
-    final days = List.generate(14, (index) => now.subtract(Duration(days: 13 - index)));
-    days.add(now.add(const Duration(days: 1))); // Tomorrow
+    // Generate 61 days: -30 to +30 from now
+    final days = List.generate(61, (index) => now.add(Duration(days: index - 30)));
     
     return SizedBox(
       height: 70, // Reduced from 85
