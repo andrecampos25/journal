@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:life_os/features/habits/habit_details_screen.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:life_os/services/supabase_service.dart';
+import 'package:life_os/features/habits/widgets/habit_creation_sheet.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class HabitsManagementScreen extends ConsumerWidget {
@@ -97,139 +98,11 @@ class HabitsManagementScreen extends ConsumerWidget {
 }
 
 void showHabitDialog(BuildContext context, WidgetRef ref, [Map<String, dynamic>? habit]) {
-  final titleController = TextEditingController(text: habit?['title']);
-  String selectedEmoji = habit?['icon'] ?? '✨';
-  List<int> selectedDays = (habit?['frequency'] as List?)?.map((e) => int.parse(e.toString())).toList() ?? [1, 2, 3, 4, 5, 6, 7];
-  
-  final emojis = ['✨', '📖', '🧘', '🏃', '💧', '🥗', '🍎', '💤', '✍️', '🎸', '💻', '🔋'];
-  final weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-  showDialog(
+  showModalBottomSheet(
     context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setDialogState) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: Text(habit == null ? 'New Habit' : 'Edit Habit', style: GoogleFonts.lexend(fontWeight: FontWeight.w600)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleController,
-                  autofocus: habit == null,
-                  decoration: InputDecoration(
-                    hintText: 'Habit title...',
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(selectedEmoji, style: const TextStyle(fontSize: 20)),
-                    ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text('Icon', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.grey)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: emojis.map((e) => GestureDetector(
-                    onTap: () => setDialogState(() => selectedEmoji = e),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: selectedEmoji == e ? const Color(0xFF1E293B).withValues(alpha: 0.1) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: selectedEmoji == e ? const Color(0xFF1E293B) : Colors.grey.withValues(alpha: 0.2)),
-                      ),
-                      child: Text(e, style: const TextStyle(fontSize: 20)),
-                    ),
-                  )).toList(),
-                ),
-                const SizedBox(height: 20),
-                Text('Frequency', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.grey)),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(7, (index) {
-                    final day = index + 1;
-                    final isSelected = selectedDays.contains(day);
-                    return GestureDetector(
-                      onTap: () {
-                        setDialogState(() {
-                          if (isSelected) {
-                            if (selectedDays.length > 1) selectedDays.remove(day);
-                          } else {
-                            selectedDays.add(day);
-                            selectedDays.sort();
-                          }
-                        });
-                      },
-                      child: Container(
-                        width: 34,
-                        height: 34,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF1E293B) : Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: isSelected ? const Color(0xFF1E293B) : Colors.grey.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(
-                          weekDays[index],
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : Colors.grey,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-                if (habit != null) ...[
-                   const SizedBox(height: 24),
-                   SizedBox(
-                     width: double.infinity,
-                     child: TextButton.icon(
-                       onPressed: () {
-                          confirmDelete(context, ref, habit['id']);
-                       },
-                       icon: const Icon(LucideIcons.trash2, size: 18, color: Colors.redAccent),
-                       label: Text('Delete Habit', style: GoogleFonts.inter(color: Colors.redAccent)),
-                     ),
-                   ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final title = titleController.text.trim();
-                if (title.isNotEmpty) {
-                  final service = ref.read(supabaseServiceProvider);
-                  if (habit == null) {
-                    await service.createHabit(title, icon: selectedEmoji, frequency: selectedDays);
-                  } else {
-                    await service.updateHabit(habit['id'], title, icon: selectedEmoji, frequency: selectedDays);
-                  }
-                  ref.invalidate(allHabitsProvider);
-                  ref.invalidate(todayHabitsProvider(DateTime.now())); 
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1E293B), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: Text('Save', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            ),
-          ],
-        );
-      }
-    ),
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => HabitCreationSheet(habit: habit),
   );
 }
 

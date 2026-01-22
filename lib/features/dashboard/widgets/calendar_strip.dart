@@ -90,8 +90,6 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
                    ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))]
                    : [],
               ),
-                   : [],
-              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

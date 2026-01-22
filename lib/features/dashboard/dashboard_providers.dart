@@ -96,6 +96,32 @@ class TodayHabitsNotifier extends FamilyAsyncNotifier<List<HabitView>, DateTime>
     }).toList();
   }
 
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    try {
+      final service = ref.read(supabaseServiceProvider);
+      final habits = await service.getHabits(forceRefresh: true);
+      final completedIds = await service.getTodayHabitLogIds(arg);
+      final dayOfWeek = arg.weekday;
+
+      final newState = habits.where((h) {
+        final freq = h['frequency'] as List?;
+        if (freq == null || freq.isEmpty) return true;
+        return freq.map((e) => int.tryParse(e.toString())).contains(dayOfWeek);
+      }).map((h) {
+        return HabitView(
+          id: h['id'],
+          title: h['title'],
+          icon: h['icon'] ?? '✨',
+          isCompleted: completedIds.contains(h['id']),
+        );
+      }).toList();
+      state = AsyncValue.data(newState);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
   Future<void> toggleHabit(String habitId, bool isCompleted) async {
     final date = arg;
     final previousState = state.value;
@@ -136,6 +162,17 @@ class TodayTasksNotifier extends FamilyAsyncNotifier<List<Task>, DateTime> {
   Future<List<Task>> build(DateTime arg) async {
     final service = ref.watch(supabaseServiceProvider);
     return service.getTodayTasks(arg);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    try {
+      final service = ref.read(supabaseServiceProvider);
+      final tasks = await service.getTodayTasks(arg, forceRefresh: true);
+      state = AsyncValue.data(tasks);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 
   Future<void> toggleTask(String id, bool isCompleted) async {

@@ -28,7 +28,9 @@ class DashboardScreen extends ConsumerWidget {
           Positioned(
             top: -100,
             right: -100,
-            child: Container(
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(
               width: 300,
               height: 300,
               decoration: BoxDecoration(
@@ -42,14 +44,19 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+                ],
+              ),
             ).animate(onPlay: (controller) => controller.repeat(reverse: true))
              .scale(duration: 5.seconds, begin: const Offset(0.8, 0.8), end: const Offset(1.2, 1.2), curve: Curves.easeInOut)
              .moveX(duration: 8.seconds, begin: -20, end: 20, curve: Curves.easeInOut),
+            ),
           ),
           Positioned(
             bottom: -50,
             left: -50,
-            child: Container(
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(
               width: 250,
               height: 250,
               decoration: BoxDecoration(
@@ -63,9 +70,12 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+                ],
+              ),
             ).animate(onPlay: (controller) => controller.repeat(reverse: true))
              .scale(duration: 7.seconds, begin: const Offset(1.2, 1.2), end: const Offset(0.9, 0.9), curve: Curves.easeInOut)
              .moveY(duration: 10.seconds, begin: -30, end: 30, curve: Curves.easeInOut),
+            ),
           ),
           
           SafeArea(
@@ -92,11 +102,12 @@ class DashboardScreen extends ConsumerWidget {
                   child: RefreshIndicator(
                     onRefresh: () async {
                       final date = ref.read(selectedDateProvider);
-                      ref.invalidate(todayTasksProvider(date));
-                      ref.invalidate(todayHabitsProvider(date));
-                      ref.invalidate(userStatsProvider);
-                      // Wait for a small delay or for one of the providers to complete
-                      await ref.read(todayHabitsProvider(date).future);
+                      // Force network refresh via notifier methods
+                      await Future.wait([
+                        ref.read(todayTasksProvider(date).notifier).refresh(),
+                        ref.read(todayHabitsProvider(date).notifier).refresh(),
+                        ref.refresh(userStatsProvider.future),
+                      ]);
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(), // Ensure it can always scroll for refresh
@@ -146,8 +157,8 @@ class DashboardScreen extends ConsumerWidget {
           // Fixed Navigation Bar
           Positioned(
             bottom: 24,
-            left: 24,
-            right: 24,
+            left: 16,
+            right: 16,
             child: _buildNavigationCard(context),
           ),
         ],

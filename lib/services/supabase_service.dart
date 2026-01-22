@@ -158,10 +158,18 @@ class SupabaseService {
   // --- Habits ---
 
   // Get active habits
-  Future<List<Map<String, dynamic>>> getHabits() async {
+  Future<List<Map<String, dynamic>>> getHabits({bool forceRefresh = false}) async {
     const cacheKey = 'habits_active';
     try {
       if (await _offlineService.isOnline) {
+        // Cache First Strategy: If we have cache and not forcing refresh, return cache.
+        // This ensures instant load and "Add" updates are reflected immediately 
+        // because create/updateHabit updates the cache.
+        if (!forceRefresh) {
+           final cached = _offlineService.getCachedData(cacheKey);
+           if (cached != null) return List<Map<String, dynamic>>.from(cached);
+        }
+
         final response = await _client
             .from('habits')
             .select()
@@ -181,6 +189,7 @@ class SupabaseService {
       final cached = _offlineService.getCachedData(cacheKey);
       if (cached != null) return List<Map<String, dynamic>>.from(cached);
       return [];
+    }
     }
   }
 
@@ -428,13 +437,19 @@ class SupabaseService {
   // --- Tasks ---
 
   // Get tasks due today or overdue
-  Future<List<Task>> getTodayTasks(DateTime date) async {
+  Future<List<Task>> getTodayTasks(DateTime date, {bool forceRefresh = false}) async {
     final dateStr = date.toIso8601String().split('T')[0];
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59).toIso8601String();
     final cacheKey = 'tasks_today_$dateStr';
     
     try {
       if (await _offlineService.isOnline) {
+        // Cache First Strategy
+        if (!forceRefresh) {
+           final cached = _offlineService.getCachedData(cacheKey);
+           if (cached != null) return (cached as List).map((e) => Task.fromMap(e)).toList();
+        }
+
         final response = await _client
             .from('tasks')
             .select()
