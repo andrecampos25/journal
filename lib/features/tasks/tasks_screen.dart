@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:life_os/core/models/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
@@ -66,9 +67,9 @@ class TaskManagementScreen extends ConsumerWidget {
     );
   }
 
-  void _showTaskDialog(BuildContext context, WidgetRef ref, [Map<String, dynamic>? task]) {
-    final titleController = TextEditingController(text: task?['title']);
-    DateTime? selectedDate = task?['due_date'] != null ? DateTime.parse(task!['due_date']) : null;
+  void _showTaskDialog(BuildContext context, WidgetRef ref, [Task? task]) {
+    final titleController = TextEditingController(text: task?.title);
+    DateTime? selectedDate = task?.dueDate;
     TimeOfDay? selectedTime = selectedDate != null ? TimeOfDay.fromDateTime(selectedDate) : null;
     
     // Stateful logic for the dialog content needs a StatefulWidget or StatefulBuilder
@@ -146,7 +147,7 @@ class TaskManagementScreen extends ConsumerWidget {
                      if (task == null) {
                        await service.createTask(title, finalDate);
                      } else {
-                       await service.updateTask(task['id'], title, finalDate);
+                       await service.updateTask(task!.id, title, finalDate);
                      }
                      ref.invalidate(allTasksProvider);
                      ref.invalidate(todayTasksProvider(DateTime.now()));
@@ -165,13 +166,13 @@ class TaskManagementScreen extends ConsumerWidget {
 }
 
 class _TaskTile extends ConsumerWidget {
-  final Map<String, dynamic> task;
+  final Task task;
   const _TaskTile({required this.task});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dueDate = task['due_date'] != null ? DateTime.parse(task['due_date']) : null;
-    final isOverdue = dueDate != null && dueDate.isBefore(DateTime.now());
+    final dueDate = task.dueDate;
+    final isOverdue = task.isOverdue;
 
     return Container(
       decoration: BoxDecoration(
@@ -186,18 +187,19 @@ class _TaskTile extends ConsumerWidget {
           ),
         ],
       ),
+      child: ListTile(
         leading: IconButton(
           icon: Icon(LucideIcons.circle, color: Theme.of(context).colorScheme.secondary),
           onPressed: () async {
              HapticFeedback.lightImpact();
              final service = ref.read(supabaseServiceProvider);
-             await service.toggleTaskCompletion(task['id'], true);
+             await service.toggleTaskCompletion(task.id, true);
              ref.invalidate(allTasksProvider);
              ref.invalidate(todayTasksProvider(DateTime.now()));
           }
         ),
         title: Text(
-          task['title'],
+          task.title,
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w500,
             color: Theme.of(context).colorScheme.onSurface,
@@ -230,7 +232,7 @@ class _TaskTile extends ConsumerWidget {
                // No, I'll just define the dialog function as a global/static helper in the file.
             } else if (value == 'delete') {
                final service = ref.read(supabaseServiceProvider);
-               await service.deleteTask(task['id']);
+               await service.deleteTask(task.id);
                ref.invalidate(allTasksProvider);
                ref.invalidate(todayTasksProvider(DateTime.now()));
             }
