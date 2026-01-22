@@ -17,17 +17,25 @@ import 'package:life_os/services/offline_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive
-  await Hive.initFlutter();
-  await OfflineService().init();
-
   // Initialize Supabase
   await Supabase.initialize(
     url: 'https://wmmujtercgfbubjsuykv.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtbXVqdGVyY2dmYnVianN1eWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMzI5MTAsImV4cCI6MjA4NDYwODkxMH0.RzMDmArP78LiUTJNPi-u3BH4IdfcLP6XKAsBJSttJ90',
   );
 
-  runApp(const ProviderScope(child: LifeOSApp()));
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Initialize OfflineService
+  final offlineService = OfflineService();
+  await offlineService.init();
+
+  runApp(ProviderScope(
+    overrides: [
+      offlineServiceProvider.overrideWithValue(offlineService),
+    ],
+    child: const LifeOSApp(),
+  ));
 }
 
 final _router = GoRouter(

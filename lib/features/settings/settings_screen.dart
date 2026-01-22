@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:life_os/services/supabase_service.dart';
 import 'package:life_os/services/offline_service.dart';
+import 'package:life_os/services/ota_service.dart';
 import 'package:life_os/core/theme/app_theme.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -68,8 +69,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           
           const SizedBox(height: 24),
-          _buildSectionHeader('About'),
-           ListTile(
+          _buildSectionHeader('System'),
+          ListTile(
+            tileColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            leading: const Icon(LucideIcons.downloadCloud, color: Color(0xFF64748B)),
+            title: Text('Check for Updates', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () {
+              ref.read(otaServiceProvider).checkForUpdates(context);
+            },
+          ),
+          const SizedBox(height: 12),
+          ListTile(
             tileColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             leading: const Icon(LucideIcons.info, color: Color(0xFF64748B)),

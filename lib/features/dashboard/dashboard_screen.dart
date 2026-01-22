@@ -11,6 +11,13 @@ import 'package:life_os/features/dashboard/widgets/calendar_strip.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
+
+class DashboardScreen extends ConsumerWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     // Glassmorphism background gradient
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -57,75 +64,83 @@ import 'package:lucide_icons/lucide_icons.dart';
           ),
           
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  _buildHeader(),
-                  const SizedBox(height: 16),
-                  _buildHeader(),
-                  const SizedBox(height: 24),
-                  
-                  // Calendar Strip
-                  const CalendarStrip(),
-                  const SizedBox(height: 16),
-                  
-                  // Gamification Stats
-                  const _StatsRow(),
-                  const SizedBox(height: 24),
-                  
-                  // Bento Grid
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: StaggeredGrid.count(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        children: [
-                          // 1. Daily Entry (Full Width)
-                          StaggeredGridTile.extent(
-                            crossAxisCellCount: 2,
-                            mainAxisExtent: 280, // Increased height for journal
-                            child: const DailyEntryCard(),
-                          ),
-                          
-                          // 2. Habits (Left Column)
-                          StaggeredGridTile.extent(
-                            crossAxisCellCount: 1,
-                            mainAxisExtent: 220,
-                            child: const TodayHabitsList(),
-                          ),
-                          
-                          // 3. Tasks (Right Column - Taller)
-                          StaggeredGridTile.extent(
-                            crossAxisCellCount: 1,
-                            mainAxisExtent: 220,
-                            child: const TodayTasksList(),
-                          ),
-                          
-                           // 4. Quick Actions / Navigation (Bottom Strip)
-                           StaggeredGridTile.extent(
-                            crossAxisCellCount: 2,
-                            mainAxisExtent: 80,
-                            child: _buildNavigationCard(context),
-                          ),
-                        ],
-                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 16),
+                      _buildHeader(context),
+                      const SizedBox(height: 16),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                
+                // Calendar Strip (Full width)
+                const CalendarStrip(),
+                const SizedBox(height: 16),
+                
+                // Scrollable Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Gamification Stats
+                        const _StatsRow(),
+                        const SizedBox(height: 24),
+                        
+                        // Tasks & Habits Combined Card
+                        Container(
+                           decoration: BoxDecoration(
+                             color: Theme.of(context).cardColor.withValues(alpha: 0.5),
+                             borderRadius: BorderRadius.circular(24),
+                             border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                           ),
+                           child: Column(
+                             children: [
+                               const TodayTasksList(),
+                               Divider(color: Colors.grey.withValues(alpha: 0.1), height: 1),
+                               const TodayHabitsList(),
+                             ],
+                           ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Daily Entry
+                        const SizedBox(
+                          height: 300,
+                          child: DailyEntryCard(),
+                        ),
+                        
+                        // Spacer for fixed nav bar
+                        const SizedBox(height: 100),
+                      ],
+                    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
+                  ),
+                ),
+              ],
             ),
+          ),
+          
+          // Fixed Navigation Bar
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
+            child: _buildNavigationCard(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -149,7 +164,6 @@ import 'package:lucide_icons/lucide_icons.dart';
             ),
           ],
         ),
-        // Removed static pill, stats are now below
         IconButton(
           onPressed: () => context.push('/settings'),
           icon: Container(
@@ -168,30 +182,57 @@ import 'package:lucide_icons/lucide_icons.dart';
   Widget _buildNavigationCard(BuildContext context) {
      return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+        color: const Color(0xFF1E293B).withValues(alpha: 0.95), // Darker, more contrast for nav
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF94A3B8).withValues(alpha: 0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(onPressed: () => context.push('/journal'), icon: const Icon(Icons.history_rounded, color: Color(0xFF1E293B))),
-              IconButton(onPressed: () => context.push('/habits'), icon: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1E293B))),
-              IconButton(onPressed: () => context.push('/tasks'), icon: const Icon(Icons.list_alt_rounded, color: Color(0xFF1E293B))),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _NavButton(icon: LucideIcons.history, label: 'Journal', onTap: () => context.push('/journal')),
+                Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.1)),
+                _NavButton(icon: LucideIcons.checkCircle, label: 'Habits', onTap: () => context.push('/habits')),
+                Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.1)),
+                _NavButton(icon: LucideIcons.listTodo, label: 'Tasks', onTap: () => context.push('/tasks')),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _NavButton({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 24),
+          // const SizedBox(height: 4),
+          // Text(label, style: GoogleFonts.inter(fontSize: 10, color: Colors.white70)),
+        ],
       ),
     );
   }
@@ -204,29 +245,32 @@ class _StatsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(userStatsProvider);
     
-    return statsAsync.when(
-      data: (stats) => Row(
-        children: [
-          Expanded(
-            child: _StatChip(
-              icon: LucideIcons.flame,
-              label: '${stats.streak} Streak',
-              color: const Color(0xFFF59E0B),
+    return IntrinsicHeight( // Ensures equal height
+      child: statsAsync.when(
+        data: (stats) => Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _StatChip(
+                icon: LucideIcons.flame,
+                label: '${stats.streak} Streak',
+                color: const Color(0xFFF59E0B),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _StatChip(
-               icon: LucideIcons.trophy,
-               label: 'Lvl ${stats.level} • ${stats.totalXp} XP',
-               color: const Color(0xFF6366F1),
-               progress: stats.currentLevelProgress,
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatChip(
+                icon: LucideIcons.trophy,
+                label: 'Lvl ${stats.level} • ${stats.totalXp} XP',
+                color: const Color(0xFF6366F1),
+                progress: stats.currentLevelProgress,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        loading: () => const SizedBox(height: 48),
+        error: (e, s) => const SizedBox(),
       ),
-      loading: () => const SizedBox(height: 48), // placeholder
-      error: (e, s) => const SizedBox(),
     );
   }
 }
@@ -242,47 +286,54 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withValues(alpha: 0.8),
+        color: Theme.of(context).cardColor, // Solid card color for better read
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: color),
+              Icon(icon, size: 18, color: color),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: 13,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
           ),
           if (progress != null) ...[
-             const SizedBox(height: 6),
+             const SizedBox(height: 8),
              ClipRRect(
-               borderRadius: BorderRadius.circular(2),
+               borderRadius: BorderRadius.circular(4),
                child: LinearProgressIndicator(
                  value: progress,
-                 minHeight: 4,
+                 minHeight: 6,
                  backgroundColor: color.withValues(alpha: 0.1),
                  valueColor: AlwaysStoppedAnimation(color),
                ),
              ),
+          ] else ...[
+             // Spacer to match the height if progress is missing? 
+             // IntrinsicHeight handles the container height matching, 
+             // but contents might not be vertically centered if one has extra widget.
+             // Adding transparent spacer or ensuring alignment helps.
+             const SizedBox(height: 14), // Approx height of progress bar + padding
           ]
         ],
       ),

@@ -44,17 +44,21 @@ class AppTheme {
       iconTheme: IconThemeData(color: Color(0xFFF8FAFC)),
     ),
     // Customize other widgets for dark mode (e.g. Card, Dialog)
-    dialogTheme: DialogTheme(
-      backgroundColor: const Color(0xFF1E293B),
-      surfaceTintColor: Colors.transparent, 
-    ),
+    // Customize other widgets for dark mode (e.g. Card, Dialog)
+    // dialogTheme: DialogTheme(
+    //   backgroundColor: const Color(0xFF1E293B),
+    //   surfaceTintColor: Colors.transparent, 
+    // ),
   );
 }
 
 // Check for Hive box "settings" and key "isDarkMode"
-class ThemeNotifier extends StateNotifier<ThemeMode> {
-  ThemeNotifier() : super(ThemeMode.light) {
+// Check for Hive box "settings" and key "isDarkMode"
+class ThemeNotifier extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() {
     _loadTheme();
+    return ThemeMode.light; // Default to light until loaded
   }
 
   Future<void> _loadTheme() async {
@@ -75,6 +79,6 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   }
 }
 
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
+final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(() {
   return ThemeNotifier();
 });

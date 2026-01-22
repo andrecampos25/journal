@@ -18,17 +18,7 @@ class UserStats {
   });
 }
 
-final userStatsProvider = FutureProvider<UserStats>((ref) async {
-  final service = ref.watch(supabaseServiceProvider);
-  await service.signIn(); // Ensure auth
 
-  final activityDates = await service.getHabitActivityDates();
-  final streak = GamificationLogic.calculateStreak(activityDates);
-  
-  final totalXp = await service.getTotalXp();
-  final level = GamificationLogic.calculateLevel(totalXp);
-  final progress = GamificationLogic.calculateLevelProgress(totalXp);
-  
 final userStatsProvider = FutureProvider<UserStats>((ref) async {
   final service = ref.watch(supabaseServiceProvider);
   await service.signIn();

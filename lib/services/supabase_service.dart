@@ -96,13 +96,7 @@ class SupabaseService {
       // If creating new, created_at defaults to now()
     };
 
-    final data = {
-      'user_id': userId,
-      'entry_date': dateStr,
-      if (mood != null) 'mood_score': mood,
-      if (journal != null) 'journal_text': journal,
-      // If creating new, created_at defaults to now()
-    };
+    // If creating new, created_at defaults to now()
 
     if (await _offlineService.isOnline) {
       if (existing != null) {
@@ -278,8 +272,6 @@ class SupabaseService {
     }
   }
   
-  // Get logs for today (to know which are done)
-  Future<List<String>> getTodayHabitLogIds(DateTime date) async {
   // Get logs for today (to know which are done)
   Future<List<String>> getTodayHabitLogIds(DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day);
