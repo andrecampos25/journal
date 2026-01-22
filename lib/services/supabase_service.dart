@@ -251,9 +251,10 @@ class SupabaseService {
         // We should let DB generate ID and then update cache?
         // Truly optimistic requires using a temp ID and then swapping it, which is complex.
         // For now, we'll try to insert. If it fails, the cache has the item.
-        // Ideally we queue it if it fails.
-        await _client.from('habits').insert(data..remove('id')); // Let DB generate ID?
-        // If we remove ID, the cache has 'temp_' but DB has real ID. This causes mismatch.
+    if (await _offlineService.isOnline) {
+      try {
+        await _client.from('habits').insert(Map<String, dynamic>.from(data)..remove('id')); // Insert COPY without ID
+      } catch (e) {
         // Better: Generate a real UUID locally.
         // For now, sticking to current logic but handling error:
       } catch (e) {
@@ -531,7 +532,7 @@ class SupabaseService {
 
     if (await _offlineService.isOnline) {
       try {
-        await _client.from('tasks').insert(data..remove('id')); // Let DB generate ID
+        await _client.from('tasks').insert(Map<String, dynamic>.from(data)..remove('id')); // Insert COPY without ID
       } catch (e) {
          // Queue for retry if failed
          await _offlineService.queueMutation('create_task', {
