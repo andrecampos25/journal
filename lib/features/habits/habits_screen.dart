@@ -6,6 +6,8 @@ import 'package:life_os/features/habits/habit_details_screen.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:life_os/services/supabase_service.dart';
 import 'package:life_os/features/habits/widgets/habit_creation_sheet.dart';
+import 'package:life_os/core/utils/contextual_messages.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class HabitsManagementScreen extends ConsumerWidget {
@@ -46,16 +48,66 @@ class HabitsManagementScreen extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (habits) {
           if (habits.isEmpty) {
-             return Center(
-               child: Column(
-                 mainAxisAlignment: MainAxisAlignment.center,
-                 children: [
-                   Icon(LucideIcons.list, size: 48, color: Colors.grey.withValues(alpha: 0.3)),
-                   const SizedBox(height: 16),
-                   Text('No habits yet.', style: GoogleFonts.inter(color: Colors.grey)),
-                 ],
-               ),
-             );
+            return Center(
+              child: Container(
+                margin: const EdgeInsets.all(32),
+                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF10B981).withValues(alpha: 0.05),
+                      Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      LucideIcons.list,
+                      size: 64,
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Build Better Habits! 💪',
+                      style: GoogleFonts.lexend(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No habits yet',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      ContextualMessages.getMotivationalQuote(),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: const Color(0xFF10B981),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+                  .animate()
+                  .fadeIn()
+                  .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
+            );
           }
 
           // Sort by archived (active first) then created_at

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -24,13 +25,12 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
     // Auto-scroll to Today after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        // Calculate offset: Index * (ItemWidth + SeparatorWidth)
-        // ItemWidth = 50, Separator = 12 => 62
-        // To align Today to the left edge, we must account for the start padding (16).
-        // Offset = Padding + (Index * ItemExtent)
-        // 16 + (30 * 62) = 1876.
+        // ListView padding is applied to the viewport, not the scroll offset
+        // Item N is at offset N * (ItemWidth + Separator) = N * 62
+        // So item 30 (today) is at offset 30 * 62 = 1860
+        // The ListView's 16px padding will naturally create the space from screen edge
         
-        final offset = 16.0 + (_todayIndex * 62.0);
+        final offset = _todayIndex * 62.0;
         _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
       }
     });
@@ -70,7 +70,8 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
           
           return GestureDetector(
             onTap: () {
-               ref.read(selectedDateProvider.notifier).state = date;
+              HapticFeedback.lightImpact();
+              ref.read(selectedDateProvider.notifier).state = date;
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),

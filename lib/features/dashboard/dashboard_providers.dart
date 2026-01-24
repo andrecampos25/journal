@@ -145,6 +145,9 @@ final todayTasksProvider = AsyncNotifierProviderFamily<TodayTasksNotifier, List<
 });
 
 class TodayTasksNotifier extends FamilyAsyncNotifier<List<Task>, DateTime> {
+  // Track which task is being toggled for loading state
+  String? toggledTaskId;
+
   @override
   Future<List<Task>> build(DateTime arg) async {
     final service = ref.watch(supabaseServiceProvider);
@@ -266,21 +269,22 @@ class TodayTasksNotifier extends FamilyAsyncNotifier<List<Task>, DateTime> {
   }
 
   Future<void> toggleTask(String id, bool isCompleted) async {
-    final previousState = state.value;
-
-    // Optimistic Update
-    if (state.hasValue) {
-       state = AsyncValue.data(
-         state.value!.map((t) => t.id == id ? t.copyWith(isCompleted: isCompleted) : t).toList()
-       );
-    }
-
+    // Set loading state
+    toggledTaskId = id;
+    
     try {
       await ref.read(supabaseServiceProvider).toggleTaskCompletion(id, isCompleted);
       ref.invalidate(userStatsProvider);
       ref.invalidate(allTasksProvider);
+      
+      // Rebuild the mixed view by calling refresh
+      await refresh();
     } catch (e) {
-      state = AsyncValue.data(previousState!);
+      // If it fails, just refresh to get the correct state
+      await refresh();
+    } finally {
+      // Clear loading state
+      toggledTaskId = null;
     }
   }
 }
