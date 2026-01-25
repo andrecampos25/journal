@@ -195,7 +195,7 @@ class _JournalEditorScreenState extends ConsumerState<JournalEditorScreen> {
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 8,
                     activeTrackColor: moodColor,
-                    inactiveTrackColor: isDark ? Colors.white10 : Colors.black10,
+                    inactiveTrackColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1),
                     thumbColor: Colors.white,
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12, elevation: 4),
                   ),

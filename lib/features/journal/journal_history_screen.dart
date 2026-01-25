@@ -104,23 +104,27 @@ class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
              );
           }
 
-              itemBuilder: (context, index) {
-                final entry = filteredEntries[index];
-                return GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (c) => JournalEditorScreen(
-                        date: entry.entryDate,
-                        initialText: entry.journalText,
-                        initialMood: entry.moodScore,
-                      ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: filteredEntries.length,
+            separatorBuilder: (c, i) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final entry = filteredEntries[index];
+              return GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (c) => JournalEditorScreen(
+                      date: entry.entryDate,
+                      initialText: entry.journalText,
+                      initialMood: entry.moodScore,
                     ),
                   ),
-                  child: _JournalEntryTile(entry: entry),
-                );
-              },
-           );
+                ),
+                child: _JournalEntryTile(entry: entry),
+              );
+            },
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
