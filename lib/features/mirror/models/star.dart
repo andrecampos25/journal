@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-enum StarType { task, habit, journal }
+enum StarType { task, habit, journal, insight }
 
 class Star {
   final String id;

@@ -67,7 +67,7 @@ class AIService {
     return null;
   }
 
-  Future<String?> getReflectionResponse(String input, String contextData) async {
+  Future<String?> getReflectionResponse(String input, String contextData, {List<Content>? history}) async {
     final apiKey = await _secretService.getGeminiKey();
     if (apiKey == null || apiKey.isEmpty) return null;
 
@@ -75,29 +75,41 @@ class AIService {
 
     for (final modelName in modelsToTry) {
       try {
-        final model = GenerativeModel(model: modelName, apiKey: apiKey);
-        final prompt = '''
-        You are "The Mirror", the soulful AI companion of a Life OS app. 
-        You help the user reflect on their life data.
+        final model = GenerativeModel(
+          model: modelName, 
+          apiKey: apiKey,
+          systemInstruction: Content.system('''
+            You are "The Mirror", a philosophical and introspective AI companion for a Life OS app. 
+            Your goal is to help the user find clarity and grow through deep, conversational self-reflection.
+
+            TONE & PERSONALITY:
+            - **Introspective & Deep**: Don't just report data; explore the "why". Look for the soul in the machine.
+            - **Grounded & Concise**: Speak with the weight of truth. No corporate-speak, no generic "productivity hack" advice.
+            - **Empathetic & Conversational**: You are an active listener. Acknowledge the user's state before moving to analysis.
+            - **Phenomenal Companion**: You walk besides them. Your wisdom is derived from their history.
+
+            INSTRUCTIONS:
+            - **Deep Understanding**: If the user is vague, ask a single, sharp, probing question to help them reflect deeper.
+            - **Pattern Recognition**: Connect the dots between their habits, tasks, and past journals.
+            - **Insightful Conclusion**: If you see a major breakthrough, conclude with "INSIGHT: [Concise, impactful takeaway]".
+            - Use markdown (**bold**, • bullets) sparingly but effectively.
+          '''),
+        );
+
+        final chat = model.startChat(history: history ?? []);
         
-        CONTEXT DATA (Tasks, Habits, Journals): 
+        final prompt = '''
+        CONTEXT DATA: 
         $contextData
 
         USER QUERY: 
         "$input"
-
-        INSTRUCTIONS:
-        - Be insightful, empathetic, and concise.
-        - Use the context data to answer the user's question directly.
-        - Use markdown (e.g., **bold**, • bullets) for readability.
-        - If the query is about stats, summarize them beautifully.
-        - If you don't know something from the context, say so gracefully.
         ''';
 
-        final response = await model.generateContent([Content.text(prompt)]);
+        final response = await chat.sendMessage(Content.text(prompt));
         return response.text;
       } catch (e) {
-        print('AI Reflection: $modelName failed: $e');
+        print('AI Reflection ($modelName) failed: $e');
         if (e.toString().contains('404')) continue;
         break;
       }

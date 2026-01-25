@@ -178,28 +178,32 @@ class _NebulaPainter extends CustomPainter {
     for (final star in stars) {
       final pulse = 0.8 + 0.2 * sin(pulsePhase + star.position.dx * 0.01);
       
+      // Core
+      final isInsight = star.type == StarType.insight;
+      final color = isInsight ? const Color(0xFFFFD700) : star.color;
+      final corePulse = isInsight ? (1.2 + 0.3 * sin(pulsePhase * 1.5)) : pulse;
+
       // Outer glow (large, soft)
       final glowPaint = Paint()
-        ..color = star.color.withValues(alpha: 0.15 * pulse)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * 3);
-      canvas.drawCircle(star.position, star.radius * 2, glowPaint);
+        ..color = color.withValues(alpha: (isInsight ? 0.3 : 0.15) * corePulse)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * (isInsight ? 5 : 3));
+      canvas.drawCircle(star.position, star.radius * (isInsight ? 3 : 2), glowPaint);
 
       // Mid glow
       final midGlowPaint = Paint()
-        ..color = star.color.withValues(alpha: 0.3 * pulse)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * 1.5);
-      canvas.drawCircle(star.position, star.radius * 1.2, midGlowPaint);
+        ..color = color.withValues(alpha: (isInsight ? 0.5 : 0.3) * corePulse)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * (isInsight ? 2.5 : 1.5));
+      canvas.drawCircle(star.position, star.radius * (isInsight ? 1.8 : 1.2), midGlowPaint);
 
-      // Core
       final corePaint = Paint()
-        ..color = star.color.withValues(alpha: 0.7 + 0.3 * pulse)
+        ..color = color.withValues(alpha: 0.7 + 0.3 * corePulse)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * 0.3);
-      canvas.drawCircle(star.position, star.radius * pulse, corePaint);
+      canvas.drawCircle(star.position, star.radius * corePulse, corePaint);
 
       // Bright center point
       final centerPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.6 + 0.4 * pulse);
-      canvas.drawCircle(star.position, star.radius * 0.25 * pulse, centerPaint);
+        ..color = Colors.white.withValues(alpha: 0.6 + 0.4 * corePulse);
+      canvas.drawCircle(star.position, star.radius * 0.25 * corePulse, centerPaint);
     }
   }
 

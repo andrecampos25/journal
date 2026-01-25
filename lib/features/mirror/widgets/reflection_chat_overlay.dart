@@ -1,11 +1,4 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:life_os/features/mirror/services/reflection_query_service.dart';
+import 'package:life_os/features/mirror/providers/reflection_chat_provider.dart';
 
 class ReflectionChatOverlay extends ConsumerStatefulWidget {
   final VoidCallback onClose;
@@ -19,21 +12,6 @@ class ReflectionChatOverlay extends ConsumerStatefulWidget {
 class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
-  final List<ChatMessage> _messages = [];
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Welcome message
-    _messages.add(ChatMessage(
-      text: '👋 **Welcome to Reflection.**\n\nAsk me anything about your data:\n\n'
-          '• "How many tasks do I have?"\n'
-          '• "Show me today\'s habits"\n'
-          '• "Find entries about work"',
-      isUser: false,
-    ));
-  }
 
   @override
   void dispose() {
@@ -46,33 +24,10 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _messages.add(ChatMessage(text: text, isUser: true));
-      _isLoading = true;
-    });
     _textController.clear();
-    _scrollToBottom();
-
     HapticFeedback.lightImpact();
-
-    try {
-      final queryService = ref.read(reflectionQueryServiceProvider);
-      final response = await queryService.query(text);
-
-      setState(() {
-        _messages.add(ChatMessage(text: response.message, isUser: false));
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _messages.add(ChatMessage(
-          text: '❌ Something went wrong. Please try again.',
-          isUser: false,
-        ));
-        _isLoading = false;
-      });
-    }
-
+    
+    await ref.read(reflectionChatProvider.notifier).sendMessage(text);
     _scrollToBottom();
   }
 
@@ -90,6 +45,8 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final chatAsync = ref.watch(reflectionChatProvider);
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -114,16 +71,20 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
 
               // Messages
               Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  itemCount: _messages.length + (_isLoading ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == _messages.length && _isLoading) {
-                      return _buildTypingIndicator();
-                    }
-                    return _buildMessageBubble(_messages[index], index);
-                  },
+                child: chatAsync.when(
+                  data: (state) => ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    itemCount: state.messages.length + (state.isLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == state.messages.length && state.isLoading) {
+                        return _buildTypingIndicator();
+                      }
+                      return _buildMessageBubble(state.messages[index], index);
+                    },
+                  ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, s) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
                 ),
               ),
 
@@ -164,7 +125,7 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'REFLECTION',
+                'THE MIRROR',
                 style: GoogleFonts.lexend(
                   color: Colors.white,
                   fontSize: 14,
@@ -173,7 +134,7 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
                 ),
               ),
               Text(
-                'Ask about your life data',
+                'Philosophical Reflection',
                 style: GoogleFonts.inter(
                   color: Colors.white38,
                   fontSize: 11,
@@ -191,7 +152,7 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, int index) {
+  Widget _buildMessageBubble(ReflectionMessage message, int index) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -239,14 +200,17 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
   }
 
   Widget _buildFormattedText(String text, bool isUser) {
+    // Hide the "INSIGHT:" trigger from the UI if it's there
+    final displayLines = text.split('\n').where((line) => !line.trim().startsWith('INSIGHT:')).join('\n').trim();
+    
     // Simple markdown-like formatting for **bold**
     final parts = <InlineSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*');
     int lastEnd = 0;
 
-    for (final match in regex.allMatches(text)) {
+    for (final match in regex.allMatches(displayLines)) {
       if (match.start > lastEnd) {
-        parts.add(TextSpan(text: text.substring(lastEnd, match.start)));
+        parts.add(TextSpan(text: displayLines.substring(lastEnd, match.start)));
       }
       parts.add(TextSpan(
         text: match.group(1),
@@ -255,8 +219,8 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
       lastEnd = match.end;
     }
 
-    if (lastEnd < text.length) {
-      parts.add(TextSpan(text: text.substring(lastEnd)));
+    if (lastEnd < displayLines.length) {
+      parts.add(TextSpan(text: displayLines.substring(lastEnd)));
     }
 
     return RichText(
@@ -266,7 +230,7 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
           fontSize: 14,
           height: 1.5,
         ),
-        children: parts.isEmpty ? [TextSpan(text: text)] : parts,
+        children: parts.isEmpty ? [TextSpan(text: displayLines)] : parts,
       ),
     );
   }
@@ -345,7 +309,7 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
                 controller: _textController,
                 style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
                 decoration: InputDecoration(
-                  hintText: 'Ask about your data...',
+                  hintText: 'Reflect on your journey...',
                   hintStyle: GoogleFonts.inter(color: Colors.white30, fontSize: 15),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -380,11 +344,4 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
       ),
     );
   }
-}
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-
-  ChatMessage({required this.text, required this.isUser});
 }

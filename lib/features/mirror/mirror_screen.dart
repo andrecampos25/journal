@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:life_os/features/mirror/models/star.dart';
 import 'package:life_os/features/mirror/widgets/nebula_canvas.dart';
 import 'package:life_os/features/mirror/widgets/reflection_chat_overlay.dart';
+import 'package:life_os/features/mirror/services/life_ledger_service.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 
 class MirrorScreen extends ConsumerStatefulWidget {
@@ -89,6 +90,29 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
         date: entry.entryDate,
         keywords: extractKeywords(text),
       ));
+    }
+
+    // Fetch Life Ledger Insights (Long-term AI memory)
+    try {
+      final ledger = ref.read(lifeLedgerServiceProvider);
+      final insights = await ledger.search('', limit: 15); // Search all insights
+      for (final insight in insights) {
+        if (insight.sourceType != 'insight') continue;
+        stars.add(Star(
+          id: insight.id.toString(),
+          position: Offset(random.nextDouble() * size.width, random.nextDouble() * size.height),
+          velocity: Offset((random.nextDouble() - 0.5) * 7, (random.nextDouble() - 0.5) * 4), // Slower drift
+          radius: 15 + random.nextDouble() * 5,
+          color: const Color(0xFFFFD700), // Gold for insights
+          type: StarType.insight,
+          linkedDataId: insight.id.toString(),
+          title: insight.content,
+          date: insight.sourceDate,
+          keywords: extractKeywords(insight.content),
+        ));
+      }
+    } catch (e) {
+      print('Mirror: Failed to fetch insights: $e');
     }
 
     // Compute correlations and create threads
@@ -267,6 +291,8 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
                     _LegendItem(color: const Color(0xFFFB923C), label: 'Habits'),
                     const SizedBox(width: 24),
                     _LegendItem(color: const Color(0xFFFBBF24), label: 'Journal'),
+                    const SizedBox(width: 24),
+                    _LegendItem(color: const Color(0xFFFFD700), label: 'Insight'),
                   ],
                 ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2),
               ),
@@ -370,6 +396,7 @@ class _InsightSheet extends StatelessWidget {
       case StarType.task: return 'TASK';
       case StarType.habit: return 'HABIT';
       case StarType.journal: return 'JOURNAL';
+      case StarType.insight: return 'INSIGHT';
     }
   }
 
@@ -378,6 +405,7 @@ class _InsightSheet extends StatelessWidget {
       case StarType.task: return LucideIcons.checkCircle;
       case StarType.habit: return LucideIcons.flame;
       case StarType.journal: return LucideIcons.bookOpen;
+      case StarType.insight: return LucideIcons.sparkles;
     }
   }
 
