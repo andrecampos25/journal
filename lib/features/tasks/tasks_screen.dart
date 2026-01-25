@@ -50,23 +50,8 @@ class TaskManagementScreen extends ConsumerWidget {
         data: (tasks) {
           if (tasks.isEmpty) {
             return Center(
-              child: Container(
-                margin: const EdgeInsets.all(32),
-                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-                      Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                  ),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -77,38 +62,24 @@ class TaskManagementScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'All Clear! 🎉',
-                      style: GoogleFonts.lexend(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
                       'No pending tasks',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      ContextualMessages.getMotivationalQuote(),
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-              )
-                  .animate()
-                  .fadeIn()
-                  .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
-            );
+              ),
+            )
+                .animate()
+                .fadeIn(curve: Curves.easeOut)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  end: const Offset(1, 1),
+                  curve: Curves.easeOut,
+                );
           }
 
           final sortedTasks = List<Task>.from(tasks); // Ensure mutable
@@ -392,7 +363,15 @@ class _TaskTile extends ConsumerWidget {
       ),
     )
         .animate()
-        .fadeIn(delay: Duration(milliseconds: 50 * index))
-        .slideX(begin: -0.1, end: 0, delay: Duration(milliseconds: 50 * index));
+        .fadeIn(
+          delay: Duration(milliseconds: 50 * index),
+          curve: Curves.easeOut,
+        )
+        .slideX(
+          begin: -0.1,
+          end: 0,
+          delay: Duration(milliseconds: 50 * index),
+          curve: Curves.easeOut,
+        );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,9 +12,20 @@ import 'package:life_os/features/tasks/tasks_screen.dart';
 import 'package:life_os/features/journal/journal_history_screen.dart';
 import 'package:life_os/features/settings/settings_screen.dart';
 import 'package:life_os/services/offline_service.dart';
+import 'package:life_os/services/secret_service.dart';
+import 'package:life_os/features/mirror/mirror_screen.dart';
+
+class DevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = DevHttpOverrides();
 
   // Initialize Supabase
   await Supabase.initialize(
@@ -27,6 +39,10 @@ void main() async {
   // Initialize OfflineService
   final offlineService = OfflineService();
   await offlineService.init();
+
+  // Initialize SecretService
+  final secretService = SecretService();
+  await secretService.init();
 
   // Sign in to Supabase once at startup
   final session = Supabase.instance.client.auth.currentSession;
@@ -68,6 +84,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/mirror',
+      builder: (context, state) => const MirrorScreen(),
     ),
   ],
 );

@@ -184,7 +184,7 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
               confettiController: _confettiController,
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
-              colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+              colors: const [Colors.green, Colors.blue, Colors.orange, Colors.deepOrange, Colors.amber],
             ),
           ),
         ],
@@ -242,117 +242,71 @@ class _TodayHabitsListState extends ConsumerState<TodayHabitsList> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    final message = ContextualMessages.getHabitsEmptyMessage();
-    final lines = message.split('\n');
-
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF10B981).withValues(alpha: 0.05),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF10B981).withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            lines[0],
-            style: GoogleFonts.lexend(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            textAlign: TextAlign.center,
+          Icon(
+            LucideIcons.list,
+            size: 16,
+            color: const Color(0xFF10B981).withValues(alpha: 0.4),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(width: 8),
           Text(
-            lines.length > 1 ? lines[1] : '',
+            'No habits for today',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            ContextualMessages.getMotivationalQuote(),
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-              color: const Color(0xFF10B981),
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     )
         .animate()
-        .fadeIn()
-        .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1));
+        .fadeIn(curve: Curves.easeOut)
+        .scale(
+          begin: const Offset(0.98, 0.98),
+          end: const Offset(1, 1),
+          curve: Curves.easeOut,
+        );
   }
 
   Widget _buildAllDoneState(BuildContext context, int count) {
-    final message = ContextualMessages.getAllHabitsDoneMessage();
-
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF10B981),
-            Color(0xFF059669),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: 0.3),
-            blurRadius: 12,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Column(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text(
             '🎉',
-            style: TextStyle(fontSize: 32),
-          ),
-          const SizedBox(height: 8),
+            style: TextStyle(fontSize: 16),
+          )
+              .animate()
+              .scale(duration: 600.ms, curve: Curves.elasticOut),
+          const SizedBox(width: 8),
           Text(
-            message,
-            style: GoogleFonts.lexend(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$count/$count habits complete',
+            'All habits complete!',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF10B981).withValues(alpha: 0.8),
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     )
         .animate()
-        .fadeIn()
-        .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1))
-        .shimmer(delay: const Duration(milliseconds: 500), duration: const Duration(milliseconds: 1000));
+        .fadeIn(curve: Curves.easeOut)
+        .scale(
+          begin: const Offset(0.98, 0.98),
+          end: const Offset(1, 1),
+          curve: Curves.easeOut,
+        );
   }
 }

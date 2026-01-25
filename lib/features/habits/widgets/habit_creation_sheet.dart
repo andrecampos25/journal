@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:life_os/services/supabase_service.dart';
+import 'package:life_os/features/mirror/services/life_ledger_service.dart';
 
 class HabitCreationSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? habit;
@@ -50,6 +51,14 @@ class _HabitCreationSheetState extends ConsumerState<HabitCreationSheet> {
     // Create/Update updates cache instantly (Optimistic)
     if (widget.habit == null) {
       await service.createHabit(title, icon: _selectedEmoji, frequency: _selectedDays);
+      
+      // Index for Life Ledger
+      ref.read(lifeLedgerServiceProvider).indexContent(
+        sourceType: 'habit',
+        sourceId: 'manual_habit_${DateTime.now().millisecondsSinceEpoch}',
+        content: title,
+        sourceDate: DateTime.now(),
+      );
     } else {
       await service.updateHabit(widget.habit!['id'], title, icon: _selectedEmoji, frequency: _selectedDays);
     }

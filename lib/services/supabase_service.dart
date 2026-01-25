@@ -8,6 +8,8 @@ class SupabaseService {
   final SupabaseClient _client;
   final OfflineService _offlineService;
 
+  SupabaseClient get client => _client;
+
   SupabaseService(this._client, this._offlineService);
 
   // Auth: Sign in anonymously to get a UID for RLS

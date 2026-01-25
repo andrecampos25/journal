@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:life_os/services/supabase_service.dart';
+import 'package:life_os/features/mirror/services/life_ledger_service.dart';
+import 'package:life_os/features/journal/journal_editor_screen.dart';
 import 'dart:async';
 
 class DailyEntryCard extends ConsumerStatefulWidget {
@@ -31,7 +33,18 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(seconds: 1), () {
        final service = ref.read(supabaseServiceProvider);
-       service.upsertDailyEntry(date, mood: _moodValue.round(), journal: _journalController.text);
+       final text = _journalController.text;
+       service.upsertDailyEntry(date, mood: _moodValue.round(), journal: text);
+       
+       // Index for Life Ledger
+       if (text.length > 10) {
+         ref.read(lifeLedgerServiceProvider).indexContent(
+           sourceType: 'journal',
+           sourceId: 'journal_${date.toIso8601String().split('T')[0]}',
+           content: text,
+           sourceDate: date,
+         );
+       }
     });
   }
 
@@ -48,7 +61,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
      if (value <= 4) return const Color(0xFF3B82F6); // Blue
      if (value <= 6) return const Color(0xFFF59E0B); // Amber
      if (value <= 8) return const Color(0xFF10B981); // Emerald
-     return const Color(0xFF8B5CF6); // Violet
+     return const Color(0xFFE2725B); // Terracotta
   }
 
   @override
@@ -101,92 +114,118 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4),
                ),
              ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'How are you?',
-                style: GoogleFonts.lexend(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'How are you?',
+                        style: GoogleFonts.lexend(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (c) => JournalEditorScreen(
+                              date: today,
+                              initialText: _journalController.text,
+                              initialMood: _moodValue.round(),
+                            ),
+                          ),
+                        ),
+                        child: AnimatedContainer(
+                          duration: 300.ms,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: moodColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            moodEmoji,
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Mood Slider
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      sliderTheme: SliderThemeData(
+                        trackHeight: 12,
+                        activeTrackColor: moodColor,
+                        inactiveTrackColor: Theme.of(context).colorScheme.surface,
+                        thumbColor: Colors.white,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14, elevation: 4),
+                        overlayColor: moodColor.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Slider(
+                      value: _moodValue,
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      onChanged: (value) {
+                        if (value != _moodValue) HapticFeedback.selectionClick();
+                        setState(() => _moodValue = value);
+                        _save(today);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Journal Input
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (c) => JournalEditorScreen(
+                            date: today,
+                            initialText: _journalController.text,
+                            initialMood: _moodValue.round(),
+                          ),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Theme.of(context).dividerColor),
+                        ),
+                        child: AbsorbPointer( // Prevent inner scroll so gesture works
+                          child: TextField(
+                            controller: _journalController,
+                            maxLines: null,
+                            readOnly: true, // Lead to full editor
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              height: 1.5,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'What\'s on your mind today?',
+                              hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              AnimatedContainer(
-                duration: 300.ms,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: moodColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  moodEmoji,
-                  style: const TextStyle(fontSize: 24),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          // Mood Slider
-          Theme(
-            data: Theme.of(context).copyWith(
-              sliderTheme: SliderThemeData(
-                trackHeight: 12,
-                activeTrackColor: moodColor,
-                inactiveTrackColor: Theme.of(context).colorScheme.surface,
-                thumbColor: Colors.white,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14, elevation: 4),
-                overlayColor: moodColor.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Slider(
-              value: _moodValue,
-              min: 1,
-              max: 10,
-              divisions: 9,
-              onChanged: (value) {
-                if (value != _moodValue) HapticFeedback.selectionClick();
-                setState(() => _moodValue = value);
-                _save(today);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Journal Input
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              child: TextField(
-                onChanged: (text) => _save(today),
-                controller: _journalController,
-                maxLines: null,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  height: 1.5,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'What\'s on your mind today?',
-                  hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.secondary),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-          ),
-        ],
-             ),
            ),
          ),
        ),

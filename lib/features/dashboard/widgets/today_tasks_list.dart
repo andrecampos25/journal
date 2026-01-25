@@ -68,8 +68,16 @@ class TodayTasksList extends ConsumerWidget {
                       isToggling: isToggling,
                     )
                         .animate()
-                        .fadeIn(delay: Duration(milliseconds: 50 * index))
-                        .slideX(begin: -0.1, end: 0, delay: Duration(milliseconds: 50 * index));
+                        .fadeIn(
+                          delay: Duration(milliseconds: 50 * index),
+                          curve: Curves.easeOut,
+                        )
+                        .slideX(
+                          begin: -0.1,
+                          end: 0,
+                          delay: Duration(milliseconds: 50 * index),
+                          curve: Curves.easeOut,
+                        );
                   },
                 );
               },
@@ -81,61 +89,37 @@ class TodayTasksList extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    final message = ContextualMessages.getTasksEmptyMessage();
-    final lines = message.split('\n');
-    
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            lines[0],
-            style: GoogleFonts.lexend(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            textAlign: TextAlign.center,
+          Icon(
+            LucideIcons.checkCircle2,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(width: 8),
           Text(
-            lines.length > 1 ? lines[1] : '',
+            'All caught up!',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            ContextualMessages.getMotivationalQuote(),
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     )
         .animate()
-        .fadeIn()
-        .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1));
+        .fadeIn(curve: Curves.easeOut)
+        .scale(
+          begin: const Offset(0.98, 0.98),
+          end: const Offset(1, 1),
+          curve: Curves.easeOut,
+        );
   }
 }
 

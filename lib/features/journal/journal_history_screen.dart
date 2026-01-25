@@ -5,6 +5,7 @@ import 'package:life_os/features/dashboard/dashboard_providers.dart';
 import 'package:life_os/core/models/models.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:life_os/features/journal/journal_editor_screen.dart';
 
 class JournalHistoryScreen extends ConsumerStatefulWidget {
   const JournalHistoryScreen({super.key});
@@ -78,27 +79,59 @@ class _JournalHistoryScreenState extends ConsumerState<JournalHistoryScreen> {
 
           if (filteredEntries.isEmpty) {
              return Center(
-               child: Column(
-                 mainAxisAlignment: MainAxisAlignment.center,
-                 children: [
-                   Icon(_searchQuery.isEmpty ? LucideIcons.bookOpen : LucideIcons.searchX, size: 48, color: Colors.grey.withValues(alpha: 0.3)),
-                   const SizedBox(height: 16),
-                   Text(
-                     _searchQuery.isEmpty ? 'No journal entries yet.' : 'No matches found.', 
-                     style: GoogleFonts.inter(color: Colors.grey)
-                   ),
-                 ],
+               child: Padding(
+                 padding: const EdgeInsets.all(32),
+                 child: Column(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Icon(
+                       _searchQuery.isEmpty ? LucideIcons.bookOpen : LucideIcons.searchX,
+                       size: 48,
+                       color: Colors.grey.withValues(alpha: 0.3),
+                     ),
+                     const SizedBox(height: 16),
+                     Text(
+                       _searchQuery.isEmpty ? 'No journal entries yet' : 'No matches found',
+                       style: GoogleFonts.inter(
+                         fontSize: 14,
+                         fontWeight: FontWeight.w500,
+                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                       ),
+                     ),
+                   ],
+                 ),
                ),
              );
           }
 
-          return ListView.separated(
-             padding: const EdgeInsets.all(16),
-             itemCount: filteredEntries.length,
-             separatorBuilder: (c, i) => const SizedBox(height: 12),
-             itemBuilder: (context, index) => _JournalEntryTile(entry: filteredEntries[index]),
-          );
+              itemBuilder: (context, index) {
+                final entry = filteredEntries[index];
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (c) => JournalEditorScreen(
+                        date: entry.entryDate,
+                        initialText: entry.journalText,
+                        initialMood: entry.moodScore,
+                      ),
+                    ),
+                  ),
+                  child: _JournalEntryTile(entry: entry),
+                );
+              },
+           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (c) => JournalEditorScreen(date: DateTime.now()),
+          ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: const Icon(LucideIcons.plus, color: Colors.white),
       ),
     );
   }

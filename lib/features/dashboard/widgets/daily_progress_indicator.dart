@@ -163,8 +163,16 @@ class DailyProgressIndicator extends ConsumerWidget {
               ),
             )
                 .animate()
-                .fadeIn(delay: const Duration(milliseconds: 200))
-                .slideY(begin: -0.1, end: 0, delay: const Duration(milliseconds: 200));
+                .fadeIn(
+                  delay: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                )
+                .slideY(
+                  begin: -0.1,
+                  end: 0,
+                  delay: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                );
           },
         );
       },

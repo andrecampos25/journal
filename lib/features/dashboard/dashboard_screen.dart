@@ -9,6 +9,7 @@ import 'package:life_os/features/dashboard/widgets/today_habits_list.dart';
 import 'package:life_os/features/dashboard/widgets/today_tasks_list.dart';
 import 'package:life_os/features/dashboard/widgets/calendar_strip.dart';
 import 'package:life_os/features/dashboard/widgets/daily_progress_indicator.dart';
+import 'package:life_os/features/dashboard/widgets/nlp_quick_bar.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
@@ -93,10 +94,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsB
                 height: 250,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.purple.withValues(alpha: 0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.purple.withValues(alpha: 0.3),
+                      color: Colors.orange.withValues(alpha: 0.3),
                       blurRadius: 100,
                       spreadRadius: 20,
                     ),
@@ -149,6 +150,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsB
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const NLPQuickBar(),
+                          
                           // Tasks & Habits Combined Card
                           Container(
                              decoration: BoxDecoration(
@@ -202,7 +205,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsB
                           // Spacer for fixed nav bar
                           const SizedBox(height: 100),
                         ],
-                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
+                      ).animate()
+                        .fadeIn(duration: 500.ms, curve: Curves.easeOut)
+                        .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
                     ),
                   ),
                 ),
@@ -292,38 +297,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsB
 
   Widget _buildNavigationCard(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark 
-            ? const Color(0xFF1E293B).withValues(alpha: 0.6)
-            : Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(32),
+            ? const Color(0xFF020617).withValues(alpha: 0.92)
+            : Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isDark 
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.5),
+              ? Colors.white.withValues(alpha: 0.15)
+              : primaryColor.withValues(alpha: 0.2),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.3)
-                : const Color(0xFF94A3B8).withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+                ? Colors.black.withValues(alpha: 0.4)
+                : primaryColor.withValues(alpha: 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+            spreadRadius: -4,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _NavButton(icon: LucideIcons.history, label: 'Journal', onTap: () => context.push('/journal')),
                 _NavButton(icon: LucideIcons.checkCircle, label: 'Habits', onTap: () => context.push('/habits')),
+                _NavButton(icon: LucideIcons.sparkles, label: 'Mirror', onTap: () => context.push('/mirror')),
                 _NavButton(icon: LucideIcons.listTodo, label: 'Tasks', onTap: () => context.push('/tasks')),
                 _NavButton(icon: LucideIcons.settings, label: 'Settings', onTap: () => context.push('/settings')),
               ],
@@ -350,7 +360,26 @@ class _NavButton extends StatelessWidget {
         onTap();
       },
       behavior: HitTestBehavior.opaque,
-      child: Icon(icon, color: Theme.of(context).colorScheme.onSurface, size: 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon, 
+            color: Theme.of(context).colorScheme.onSurface, 
+            size: 24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

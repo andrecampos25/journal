@@ -8,6 +8,7 @@ import 'package:life_os/services/ota_service.dart';
 import 'package:life_os/core/theme/app_theme.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:life_os/services/secret_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -75,7 +76,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const SizedBox(height: 24),
           _buildSectionHeader('Security'),
-           ListTile(
+          ListTile(
             tileColor: Theme.of(context).cardColor,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             leading: Icon(LucideIcons.lock, color: Theme.of(context).colorScheme.secondary),
@@ -85,6 +86,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               HapticFeedback.lightImpact();
               _showChangePinDialog(context);
             },
+          ),
+
+          const SizedBox(height: 24),
+          _buildSectionHeader('AI Configuration'),
+          ListTile(
+            tileColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            leading: Icon(LucideIcons.sparkles, color: Theme.of(context).colorScheme.secondary),
+            title: Text('Gemini API Key', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.secondary),
+            onTap: () => _showApiKeyDialog(context),
           ),
           
           const SizedBox(height: 24),
@@ -110,6 +122,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  void _showApiKeyDialog(BuildContext context) async {
+    final secretService = ref.read(secretServiceProvider);
+    final currentKey = await secretService.getGeminiKey();
+    final controller = TextEditingController(text: currentKey);
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Gemini API Key', style: GoogleFonts.lexend(fontWeight: FontWeight.w600)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Enter your Gemini API key to enable AI features. The key is stored securely on your device.',
+                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'API Key',
+                  border: OutlineInputBorder(),
+                  hintText: 'AIza...',
+                ),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+            ),
+            FilledButton(
+              onPressed: () async {
+                await secretService.saveGeminiKey(controller.text.trim());
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('API Key saved securely')),
+                  );
+                }
+              },
+              child: Text('Save', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _showChangePinDialog(BuildContext context) {

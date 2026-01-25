@@ -49,23 +49,8 @@ class HabitsManagementScreen extends ConsumerWidget {
         data: (habits) {
           if (habits.isEmpty) {
             return Center(
-              child: Container(
-                margin: const EdgeInsets.all(32),
-                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF10B981).withValues(alpha: 0.05),
-                      Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                  ),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -76,38 +61,24 @@ class HabitsManagementScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Build Better Habits! 💪',
-                      style: GoogleFonts.lexend(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
                       'No habits yet',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      ContextualMessages.getMotivationalQuote(),
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        color: const Color(0xFF10B981),
-                      ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-              )
-                  .animate()
-                  .fadeIn()
-                  .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
-            );
+              ),
+            )
+                .animate()
+                .fadeIn(curve: Curves.easeOut)
+                .scale(
+                  begin: const Offset(0.95, 0.95),
+                  end: const Offset(1, 1),
+                  curve: Curves.easeOut,
+                );
           }
 
           // Sort by archived (active first) then created_at
