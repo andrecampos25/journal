@@ -1,3 +1,10 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'dart:ui' show ImageFilter;
 import 'package:life_os/features/mirror/providers/reflection_chat_provider.dart';
 
 class ReflectionChatOverlay extends ConsumerStatefulWidget {

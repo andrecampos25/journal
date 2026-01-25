@@ -99,13 +99,13 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
       for (final insight in insights) {
         if (insight.sourceType != 'insight') continue;
         stars.add(Star(
-          id: insight.id.toString(),
+          id: insight.sourceId.toString(),
           position: Offset(random.nextDouble() * size.width, random.nextDouble() * size.height),
           velocity: Offset((random.nextDouble() - 0.5) * 7, (random.nextDouble() - 0.5) * 4), // Slower drift
           radius: 15 + random.nextDouble() * 5,
           color: const Color(0xFFFFD700), // Gold for insights
           type: StarType.insight,
-          linkedDataId: insight.id.toString(),
+          linkedDataId: insight.sourceId.toString(),
           title: insight.content,
           date: insight.sourceDate,
           keywords: extractKeywords(insight.content),
