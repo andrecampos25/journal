@@ -596,6 +596,61 @@ class SupabaseService {
       await _offlineService.queueMutation('delete_task', {'id': id});
     }
   }
+  // --- Chat Messages ---
+
+  Future<List<Map<String, dynamic>>> getChatHistory({int limit = 50}) async {
+    const cacheKey = 'chat_history';
+    try {
+      if (await _offlineService.isOnline) {
+        final response = await _client
+            .from('chat_messages')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false)
+            .limit(limit);
+        
+        // Reverse to get chronological order for UI
+        final messages = (response as List).reversed.toList();
+        await _offlineService.cacheData(cacheKey, messages);
+        return List<Map<String, dynamic>>.from(messages);
+      } else {
+        final cached = _offlineService.getCachedData(cacheKey);
+        if (cached != null) return List<Map<String, dynamic>>.from(cached);
+        return [];
+      }
+    } catch (e) {
+      final cached = _offlineService.getCachedData(cacheKey);
+      if (cached != null) return List<Map<String, dynamic>>.from(cached);
+      return [];
+    }
+  }
+
+  Future<void> saveChatMessage(String text, bool isUser) async {
+    final data = {
+      'user_id': userId,
+      'text': text,
+      'is_user': isUser,
+      'created_at': DateTime.now().toIso8601String(),
+    };
+
+    if (await _offlineService.isOnline) {
+      await _client.from('chat_messages').insert(data);
+    } else {
+      await _offlineService.queueMutation('save_chat_message', data);
+    }
+
+    // Update Cache
+    const cacheKey = 'chat_history';
+    final current = List<Map<String, dynamic>>.from(_offlineService.getCachedData(cacheKey) ?? []);
+    current.add({
+      'id': 'temp_${DateTime.now().millisecondsSinceEpoch}',
+      ...data
+    });
+    // Keep cache at limit
+    if (current.length > 50) current.removeAt(0);
+    await _offlineService.cacheData(cacheKey, current);
+  }
+
   // --- Sync Logic ---
   
   Future<void> syncPendingMutations() async {
@@ -662,6 +717,12 @@ class SupabaseService {
                DateTime.parse(payload['date'] as String),
                mood: payload['mood'] as int?,
                journal: payload['journal'] as String?
+             );
+             break;
+          case 'save_chat_message':
+             await saveChatMessage(
+               payload['text'] as String,
+               payload['is_user'] as bool,
              );
              break;
         }

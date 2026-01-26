@@ -19,16 +19,17 @@ class OtaService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
       
-      print('Current Version: $currentVersion');
+      debugPrint('Current Version: $currentVersion');
 
       // 2. Fetch remote version info
       final response = await http.get(Uri.parse(kUpdateUrl));
+      if (!context.mounted) return;
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final remoteVersion = data['version'];
         final apkUrl = data['apkUrl'];
         
-        print('Remote Version: $remoteVersion');
+        debugPrint('Remote Version: $remoteVersion');
 
         // 3. Compare
         if (_isVersionGreaterThan(remoteVersion, currentVersion)) {
@@ -41,8 +42,8 @@ class OtaService {
         throw Exception('Failed to fetch release info');
       }
     } catch (e) {
-      print('Update check failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update check failed: $e')));
+      debugPrint('Update check failed: $e');
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update check failed: $e')));
     }
   }
 
@@ -69,21 +70,21 @@ class OtaService {
           switch (event.status) {
             case OtaStatus.DOWNLOADING:
               // For simplicity, we just log progress, but could update a state provider
-              print('OTA: Downloading ${event.value}%');
+              debugPrint('OTA: Downloading ${event.value}%');
               break;
             case OtaStatus.INSTALLING:
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Starting installation...')));
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Starting installation...')));
               break;
             case OtaStatus.ALREADY_RUNNING_ERROR:
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update already in progress.')));
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update already in progress.')));
               break;
             case OtaStatus.PERMISSION_NOT_GRANTED_ERROR:
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission denied to install updates.')));
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission denied to install updates.')));
               break;
             case OtaStatus.DOWNLOAD_ERROR:
             case OtaStatus.CHECKSUM_ERROR:
             case OtaStatus.INTERNAL_ERROR:
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${event.status}')));
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${event.status}')));
               break;
             default:
               break;
@@ -91,8 +92,8 @@ class OtaService {
         },
       );
     } catch (e) {
-       print('OTA Error: $e');
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTA Error: $e')));
+       debugPrint('OTA Error: $e');
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTA Error: $e')));
     }
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
-import 'package:life_os/core/models/models.dart';
+
 import 'package:life_os/services/ai_service.dart';
 import 'package:life_os/features/mirror/services/life_ledger_service.dart';
 

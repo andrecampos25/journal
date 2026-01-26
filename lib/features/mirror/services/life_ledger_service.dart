@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/services/supabase_service.dart';
 import 'package:life_os/services/ai_service.dart';
@@ -41,7 +42,7 @@ class LifeLedgerService {
     
     if (isAvailable && _aiService != null && userId != null) {
       try {
-        final embedding = await _aiService!.embedText(query);
+        final embedding = await _aiService.embedText(query);
         if (embedding != null) {
           final List<dynamic> response = await _supabaseService.client.rpc(
             'search_life_ledger',
@@ -61,7 +62,7 @@ class LifeLedgerService {
           )).toList();
         }
       } catch (e) {
-        print('LifeLedger Search failed: $e');
+        debugPrint('LifeLedger Search failed: $e');
       }
     }
     
@@ -149,7 +150,7 @@ class LifeLedgerService {
     if (!isAvailable || userId == null || _aiService == null) return;
 
     try {
-      final embedding = await _aiService!.embedText(content);
+      final embedding = await _aiService.embedText(content);
       await _supabaseService.client.from('life_ledger_embeddings').upsert({
         'user_id': userId,
         'source_type': sourceType,
@@ -159,7 +160,7 @@ class LifeLedgerService {
         'embedding': embedding,
       });
     } catch (e) {
-      print('LifeLedger Indexing failed: $e');
+      debugPrint('LifeLedger Indexing failed: $e');
     }
   }
 }

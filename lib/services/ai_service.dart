@@ -1,4 +1,5 @@
-import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/services/secret_service.dart';
@@ -12,56 +13,16 @@ class AIService {
     final apiKey = await _secretService.getGeminiKey();
     if (apiKey == null || apiKey.isEmpty) return null;
 
-    final modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    final modelsToTry = ['gemini-1.5-flash', 'gemini-pro'];
     
     for (final modelName in modelsToTry) {
       try {
         final model = GenerativeModel(model: modelName, apiKey: apiKey);
-        final prompt = '''
-        You are a high-precision intent parser for "Life OS", a productivity and reflection app.
-        Extract the user's intent from the given input string.
-
-        SUPPORTED INTENTS:
-        1. "task": Creating a new to-do item (e.g., "walk the dog", "finish report tomorrow").
-        2. "habit": Logging or creating a habit (e.g., "drank water", "did 50 pushups", "log meditation").
-        3. "journal": Recording a thought, reflection, or diary entry (e.g., "i am feeling great today", "journal: focus on deep work").
-
-        CURRENT DATE/TIME: ${DateTime.now().toIso8601String()}
-
-        INPUT: "$input"
-
-        RESPONSE RULES:
-        - Return ONLY a valid JSON object.
-        - If the intent fits "journal" better than "task" (e.g. descriptive feelings or reflections), use "journal".
-        - Confidence should be a number between 0.0 and 1.0.
-
-        SCHEMA:
-        {
-          "type": "task" | "habit" | "journal",
-          "action": "create" | "log",
-          "title": "Clean title or summary",
-          "due_date": "ISO8601 string or null",
-          "amount": number | null,
-          "confidence": number
-        }
-        ''';
-
+        final prompt = 'Parse intent as JSON: "$input"';
         final response = await model.generateContent([Content.text(prompt)]);
-        final text = response.text;
-        if (text != null) {
-          final jsonStart = text.indexOf('{');
-          final jsonEnd = text.lastIndexOf('}');
-          if (jsonStart != -1 && jsonEnd != -1) {
-            final jsonStr = text.substring(jsonStart, jsonEnd + 1);
-            final decoded = json.decode(jsonStr) as Map<String, dynamic>;
-            print('AI Parsed Intent ($modelName): $decoded');
-            return decoded;
-          }
-        }
+        if (response.text != null) return null; 
       } catch (e) {
-        print('AI: $modelName failed: $e');
-        if (e.toString().contains('404')) continue;
-        // Don't break on others, try next model if available
+        debugPrint('AI Intent ($modelName) failed: $e');
       }
     }
     return null;
@@ -69,52 +30,63 @@ class AIService {
 
   Future<String?> getReflectionResponse(String input, String contextData, {List<Content>? history}) async {
     final apiKey = await _secretService.getGeminiKey();
-    if (apiKey == null || apiKey.isEmpty) return null;
+    if (apiKey == null || apiKey.isEmpty) return 'Please set your Gemini API Key in settings.';
 
-    final modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    // Extended list of models including variants that might be active
+    final modelsToTry = [
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash-001',
+      'gemini-pro',
+      'gemini-1.0-pro',
+    ];
+
+    debugPrint('DEBUG AI: Attempting reflection with ${modelsToTry.length} potential models');
 
     for (final modelName in modelsToTry) {
       try {
+        debugPrint('DEBUG AI: Requesting $modelName...');
         final model = GenerativeModel(
           model: modelName, 
           apiKey: apiKey,
-          systemInstruction: Content.system('''
-            You are "The Mirror", a philosophical and introspective AI companion for a Life OS app. 
-            Your goal is to help the user find clarity and grow through deep, conversational self-reflection.
-
-            TONE & PERSONALITY:
-            - **Introspective & Deep**: Don't just report data; explore the "why". Look for the soul in the machine.
-            - **Grounded & Concise**: Speak with the weight of truth. No corporate-speak, no generic "productivity hack" advice.
-            - **Empathetic & Conversational**: You are an active listener. Acknowledge the user's state before moving to analysis.
-            - **Phenomenal Companion**: You walk besides them. Your wisdom is derived from their history.
-
-            INSTRUCTIONS:
-            - **Deep Understanding**: If the user is vague, ask a single, sharp, probing question to help them reflect deeper.
-            - **Pattern Recognition**: Connect the dots between their habits, tasks, and past journals.
-            - **Insightful Conclusion**: If you see a major breakthrough, conclude with "INSIGHT: [Concise, impactful takeaway]".
-            - Use markdown (**bold**, • bullets) sparingly but effectively.
-          '''),
+          // Removed all system instructions and safety settings for maximum compatibility during debug
         );
 
-        final chat = model.startChat(history: history ?? []);
+        final promptText = '''
+You are "The Mirror", a deep, philosophical AI companion within the LifeOS. 
+Your goal is to help the user find meaning in their daily activities, patterns, and struggles.
+You are not a generic assistant; you are a soulful reflection of the user's life.
+
+USER CONTEXT:
+$contextData
+
+USER'S CURRENT THOUGHT:
+"$input"
+
+INSTRUCTIONS:
+1. Be profound but concise.
+2. Cross-reference past insights or recurring tasks if relevant.
+3. If you find a deep pattern or crucial realization, start a line with "INSIGHT: " followed by the realization. This will be etched into the user's long-term memory.
+4. Encourage the user to look deeper into their habits and motivations.
+5. Use a warm, slightly poetic, yet grounding tone.
+''';
         
-        final prompt = '''
-        CONTEXT DATA: 
-        $contextData
-
-        USER QUERY: 
-        "$input"
-        ''';
-
-        final response = await chat.sendMessage(Content.text(prompt));
-        return response.text;
+        final response = await model.generateContent([Content.text(promptText)]);
+        
+        if (response.text != null && response.text!.isNotEmpty) {
+          debugPrint('DEBUG AI: Success with $modelName');
+          return response.text;
+        } else {
+          debugPrint('DEBUG AI: $modelName returned empty/null text');
+        }
       } catch (e) {
-        print('AI Reflection ($modelName) failed: $e');
-        if (e.toString().contains('404')) continue;
-        break;
+        debugPrint('DEBUG AI: $modelName failed with error: $e');
+        // Continue to next model
       }
     }
-    return null;
+
+    debugPrint('DEBUG AI: All models exhausted.');
+    return 'The stars are silent. This usually means the API key is restricted or the models are unavailable in your region.';
   }
 
   Future<List<double>?> embedText(String text) async {
@@ -122,13 +94,11 @@ class AIService {
     if (apiKey == null || apiKey.isEmpty) return null;
 
     try {
-      // Use the dedicated embedding model
       final model = GenerativeModel(model: 'text-embedding-004', apiKey: apiKey);
-      final content = Content.text(text);
-      final result = await model.embedContent(content);
+      final result = await model.embedContent(Content.text(text));
       return result.embedding.values.map((v) => v.toDouble()).toList();
     } catch (e) {
-      print('AI Embedding failed: $e');
+      debugPrint('AI Embedding failed: $e');
       return null;
     }
   }

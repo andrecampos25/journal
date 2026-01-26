@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:life_os/services/ai_service.dart';
 import 'package:life_os/features/mirror/services/life_ledger_service.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
+import 'package:life_os/services/supabase_service.dart';
+import 'package:life_os/core/models/task.dart';
+import 'package:life_os/core/models/habit.dart';
+import 'package:life_os/core/models/daily_entry.dart';
 import 'dart:async';
 
 class ReflectionMessage {
@@ -37,21 +42,47 @@ class ReflectionChatState {
   }
 }
 
-class ReflectionChatNotifier extends AutoDisposeAsyncNotifier<ReflectionChatState> {
+class ReflectionChatNotifier extends AsyncNotifier<ReflectionChatState> {
   @override
-  FutureOr<ReflectionChatState> build() {
-    // Initial welcome message
-    return ReflectionChatState(
-      messages: [
-        ReflectionMessage(
-          text: '👋 **I am The Mirror.**\n\nI am here to help you find meaning in your journey. Ask me anything about your history, or let\'s explore patterns you haven\'t noticed yet.',
-          isUser: false,
-        ),
-      ],
-    );
+  FutureOr<ReflectionChatState> build() async {
+    // 1. Load history from Supabase
+    final supabase = ref.read(supabaseServiceProvider);
+    try {
+      final history = await supabase.getChatHistory();
+      
+      if (history.isEmpty) {
+        return ReflectionChatState(
+          messages: [
+            ReflectionMessage(
+              text: '👋 **I am The Mirror.**\n\nI am here to help you find meaning in your journey.',
+              isUser: false,
+            ),
+          ],
+        );
+      }
+
+      return ReflectionChatState(
+        messages: history.map((m) => ReflectionMessage(
+          text: m['text'] as String,
+          isUser: m['is_user'] as bool,
+          timestamp: DateTime.parse(m['created_at'] as String),
+        )).toList(),
+      );
+    } catch (e) {
+      debugPrint('Memory: Table chat_messages not found or access denied. Running in session-only mode.');
+      return ReflectionChatState(
+        messages: [
+          ReflectionMessage(
+            text: '✨ **The Mirror is active (Session-only).**\n\nTo enable long-term memory, please apply the `chat_messages` SQL migration in your Supabase dashboard.',
+            isUser: false,
+          ),
+        ],
+      );
+    }
   }
 
   Future<void> sendMessage(String text) async {
+    debugPrint('sendMessage started with text: $text');
     final currentState = state.value ?? ReflectionChatState();
     
     // Add user message to state
@@ -60,38 +91,81 @@ class ReflectionChatNotifier extends AutoDisposeAsyncNotifier<ReflectionChatStat
       isLoading: true,
     ));
 
+    print('DEBUG: User message added to state. Loading history logic...');
+    // Persist user message (Try-catch to prevent blocking AI logic if table missing)
+    try {
+      ref.read(supabaseServiceProvider).saveChatMessage(text, true);
+      debugPrint('saveChatMessage called');
+    } catch (e) {
+      debugPrint('saveChatMessage error: $e');
+    }
+
     try {
       final ai = ref.read(aiServiceProvider);
       final ledger = ref.read(lifeLedgerServiceProvider);
       
-      // 1. Context Gathering
-      // Search the ledger for relevant historical context
-      final historicalContext = await ledger.search(text, limit: 12);
+      debugPrint('Starting Context Gathering...');
       
-      // Get current data for immediate context
-      final tasks = await ref.read(allTasksProvider.future);
-      final habits = await ref.read(allHabitsProvider.future);
-      
-      final contextStr = '''
-      CURRENT STATUS:
-      - Active Tasks: ${tasks.where((t) => !t.isCompleted).take(5).map((t) => t.title).join(', ')}
-      - Tracked Habits: ${habits.take(5).map((h) => h['title']).join(', ')}
-      
-      HISTORICAL CONTEXT (from Life Ledger):
-      ${historicalContext.map((e) => '[${e.sourceType}] ${e.content} (${e.sourceDate.toIso8601String().split('T')[0]})').join('\n')}
-      ''';
+      // 1. Context Gathering (With individual safety catches & timeouts)
+      List<LedgerEntry> longTermInsights = [];
+      try {
+        longTermInsights = await ledger.search('insight', limit: 10).timeout(const Duration(seconds: 4));
+        debugPrint('Insights gathered: ${longTermInsights.length}');
+      } catch (e) { debugPrint('Insights failed: $e'); }
 
-      // 2. Prepare Chat History for Gemini
-      final history = currentState.messages.map((m) {
-        return m.isUser ? Content.text(m.text) : Content.model([TextPart(m.text)]);
-      }).toList();
+      List<LedgerEntry> historicalContext = [];
+      try {
+        historicalContext = await ledger.search(text, limit: 12).timeout(const Duration(seconds: 4));
+        debugPrint('History gathered: ${historicalContext.length}');
+      } catch (e) { debugPrint('History failed: $e'); }
+      
+      debugPrint('Searching tasks/habits...');
+      final tasksAsync = await ref.read(allTasksProvider.future).timeout(const Duration(seconds: 4)).catchError((e) {
+        debugPrint('Tasks future error: $e');
+        return <Task>[];
+      });
+      final habitsAsync = await ref.read(allHabitsProvider.future).timeout(const Duration(seconds: 4)).catchError((e) {
+        debugPrint('Habits future error: $e');
+        return <Map<String, dynamic>>[];
+      });
+      
+      // 2. Context synthesis - build a rich context string for the AI
+      final contextParts = <String>[];
+      
+      if (longTermInsights.isNotEmpty) {
+        contextParts.add('PAST INSIGHTS:\n' + longTermInsights.map((e) => '- ${e.content}').join('\n'));
+      }
+      
+      if (historicalContext.isNotEmpty) {
+        contextParts.add('HISTORICAL DATA:\n' + historicalContext.map((e) => '- ${e.content} (${e.sourceType})').join('\n'));
+      }
+      
+      if (tasksAsync.isNotEmpty) {
+        final activeTasks = tasksAsync.where((t) => !t.isCompleted).take(5);
+        if (activeTasks.isNotEmpty) {
+          contextParts.add('CURRENT TASKS:\n' + activeTasks.map((t) => '- ${t.title}').join('\n'));
+        }
+      }
+      
+      final contextStr = contextParts.isEmpty ? 'No context available.' : contextParts.join('\n\n');
+
+      // 2. Prepare Chat History (minimal for now)
+      final history = <Content>[];
 
       // 3. Get AI Response
       final response = await ai.getReflectionResponse(text, contextStr, history: history);
+      debugPrint('AI response received: ${response != null}');
 
       if (response != null) {
         // 4. Memory Loop: Check for "INSIGHT:" trigger
         _processInsights(response);
+
+        // Persist AI message
+        try {
+          ref.read(supabaseServiceProvider).saveChatMessage(response, false);
+        } catch (e) {
+          print('DEBUG: AI persist error: $e');
+        }
 
         // Update state with AI response
         final newState = state.value ?? currentState;
@@ -100,9 +174,10 @@ class ReflectionChatNotifier extends AutoDisposeAsyncNotifier<ReflectionChatStat
           isLoading: false,
         ));
       } else {
-        throw Exception('No response from AI');
+        throw Exception('AI Response Null');
       }
     } catch (e) {
+      debugPrint('UNCAUGHT ERROR in sendMessage: $e');
       final newState = state.value ?? currentState;
       state = AsyncValue.data(newState.copyWith(
         messages: [...newState.messages, ReflectionMessage(text: 'I am struggling to find the words right now. Perhaps we can try again?', isUser: false)],
@@ -125,7 +200,7 @@ class ReflectionChatNotifier extends AutoDisposeAsyncNotifier<ReflectionChatStat
               content: insight,
               sourceDate: DateTime.now(),
             );
-            print('Memory Loop: Saved AI Insight: $insight');
+            debugPrint('Memory Loop: Saved AI Insight: $insight');
           }
         }
       }
@@ -133,6 +208,6 @@ class ReflectionChatNotifier extends AutoDisposeAsyncNotifier<ReflectionChatStat
   }
 }
 
-final reflectionChatProvider = AsyncNotifierProvider.autoDispose<ReflectionChatNotifier, ReflectionChatState>(() {
+final reflectionChatProvider = AsyncNotifierProvider<ReflectionChatNotifier, ReflectionChatState>(() {
   return ReflectionChatNotifier();
 });

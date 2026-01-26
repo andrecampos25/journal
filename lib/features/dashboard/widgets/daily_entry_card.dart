@@ -21,7 +21,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
   double _moodValue = 5.0;
   final TextEditingController _journalController = TextEditingController();
   Timer? _debounce;
-  bool _isLoading = true;
+
 
   @override
   void initState() {
@@ -67,7 +67,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
   @override
   Widget build(BuildContext context) {
     final today = ref.watch(selectedDateProvider);
-    final entryAsync = ref.watch(dailyEntryProvider(today));
+
 
     // Listen to data changes to update local state ONCE
     ref.listen(dailyEntryProvider(today), (previous, next) {
@@ -79,7 +79,7 @@ class _DailyEntryCardState extends ConsumerState<DailyEntryCard> {
              if (entry.journalText != null && _journalController.text.isEmpty) {
                 _journalController.text = entry.journalText!;
              }
-             _isLoading = false;
+
            });
         }
       }

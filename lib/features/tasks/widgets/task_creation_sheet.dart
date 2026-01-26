@@ -276,9 +276,9 @@ class _TaskCreationSheetState extends ConsumerState<TaskCreationSheet> {
                            await ref.read(supabaseServiceProvider).deleteTask(widget.task!.id);
                            ref.invalidate(allTasksProvider);
                            ref.invalidate(todayTasksProvider(DateTime.now()));
-                           if (mounted) Navigator.pop(context);
+                           if (context.mounted) Navigator.pop(context);
                         } catch (e) {
-                          if (mounted) setState(() => _isLoading = false);
+                           if (context.mounted) setState(() => _isLoading = false);
                         }
                       }
                     },
