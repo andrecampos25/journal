@@ -1,4 +1,4 @@
-
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,17 +15,53 @@ class AIService {
 
     final modelsToTry = ['gemini-1.5-flash', 'gemini-pro'];
     
+    final prompt = '''
+Parse the following user input into a JSON intent.
+INPUT: "$input"
+
+SCHEMA:
+{
+  "type": "task" | "habit" | "journal",
+  "title": "string (the core action or item)",
+  "action": "create" | "log" | "delete" | "toggle",
+  "confidence": 0.0 to 1.0,
+  "due_date": "ISO8601 string or null"
+}
+
+Respond ONLY with the JSON.
+''';
+
     for (final modelName in modelsToTry) {
       try {
         final model = GenerativeModel(model: modelName, apiKey: apiKey);
-        final prompt = 'Parse intent as JSON: "$input"';
         final response = await model.generateContent([Content.text(prompt)]);
-        if (response.text != null) return null; 
+        
+        if (response.text != null && response.text!.isNotEmpty) {
+          final cleaned = _stripJsonMarkdown(response.text!);
+          try {
+            return json.decode(cleaned) as Map<String, dynamic>;
+          } catch (e) {
+             debugPrint('AI Response parsing failed: $e');
+          }
+        }
       } catch (e) {
         debugPrint('AI Intent ($modelName) failed: $e');
       }
     }
     return null;
+  }
+
+  String _stripJsonMarkdown(String text) {
+    if (text.contains('```json')) {
+      final start = text.indexOf('```json') + 7;
+      final end = text.lastIndexOf('```');
+      return text.substring(start, end).trim();
+    } else if (text.contains('```')) {
+      final start = text.indexOf('```') + 3;
+      final end = text.lastIndexOf('```');
+      return text.substring(start, end).trim();
+    }
+    return text.trim();
   }
 
   Future<String?> getReflectionResponse(String input, String contextData, {List<Content>? history}) async {
