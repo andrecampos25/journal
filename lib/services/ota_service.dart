@@ -21,19 +21,30 @@ class OtaService {
       
       debugPrint('Current Version: $currentVersion');
 
-      // 2. Fetch remote version info
-      final response = await http.get(Uri.parse(kUpdateUrl));
+      // 2. Fetch remote version info with cache-breaker
+      final cacheBreaker = DateTime.now().millisecondsSinceEpoch;
+      final response = await http.get(Uri.parse('$kUpdateUrl?cb=$cacheBreaker'));
+      
       if (!context.mounted) return;
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final remoteVersion = data['version'];
-        final apkUrl = data['apkUrl'];
+        final remoteVersion = data['version'] as String;
+        final apkUrl = data['apkUrl'] as String;
         
-        debugPrint('Remote Version: $remoteVersion');
+        debugPrint('OTA Check: Remote=$remoteVersion, Local=$currentVersion');
 
-        // 3. Compare
-        if (_isVersionGreaterThan(remoteVersion, currentVersion)) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update found! Downloading...')));
+        // 3. Compare with better logging
+        final isUpdateAvailable = _isVersionGreaterThan(remoteVersion, currentVersion);
+        debugPrint('OTA Check: Is Update Available? $isUpdateAvailable');
+
+        if (isUpdateAvailable) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text('Update found: v$remoteVersion. Downloading...'),
+               backgroundColor: Colors.green,
+             )
+           );
            tryUpdate(apkUrl, context);
         } else {
            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('App is up to date.')));
