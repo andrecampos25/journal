@@ -11,6 +11,7 @@ import 'package:life_os/features/mirror/widgets/nebula_canvas.dart';
 import 'package:life_os/features/mirror/widgets/reflection_chat_overlay.dart';
 import 'package:life_os/features/mirror/services/life_ledger_service.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
+import 'package:life_os/features/mirror/providers/reflection_chat_provider.dart';
 
 class MirrorScreen extends ConsumerStatefulWidget {
   const MirrorScreen({super.key});
@@ -24,6 +25,7 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
   List<StarThread> _threads = [];
   bool _isLoading = true;
   bool _isChatOpen = false;
+  Star? _selectedStar;
 
   @override
   void initState() {
@@ -95,15 +97,16 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
     // Fetch Life Ledger Insights (Long-term AI memory)
     try {
       final ledger = ref.read(lifeLedgerServiceProvider);
-      final insights = await ledger.search('', limit: 15); // Search all insights
+      final insights = await ledger.search('', limit: 30); // Search all insights
       for (final insight in insights) {
-        if (insight.sourceType != 'insight') continue;
+        if (insight.sourceType != 'journal' && insight.sourceType != 'insight') continue;
+        final isActualInsight = insight.content.startsWith('[AI Insight]');
         stars.add(Star(
           id: insight.sourceId.toString(),
           position: Offset(random.nextDouble() * size.width, random.nextDouble() * size.height),
           velocity: Offset((random.nextDouble() - 0.5) * 7, (random.nextDouble() - 0.5) * 4), // Slower drift
           radius: 15 + random.nextDouble() * 5,
-          color: const Color(0xFFFFD700), // Gold for insights
+          color: isActualInsight ? const Color(0xFFFFD700) : const Color(0xFF94A3B8), // Gold for insights, slate for others
           type: StarType.insight,
           linkedDataId: insight.sourceId.toString(),
           title: insight.content,
@@ -150,14 +153,21 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
   void _onStarTapped(Star star) {
     if (star.linkedDataId == null || star.title.isEmpty) return;
 
-    HapticFeedback.mediumImpact();
+    setState(() => _selectedStar = star);
     
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _InsightSheet(star: star),
-    );
+      builder: (context) => _InsightSheet(
+        star: star,
+        onReflect: () {
+          Navigator.pop(context);
+          ref.read(reflectionChatProvider.notifier).sendMessage('I want to reflect on this: "${star.title}"');
+          setState(() => _isChatOpen = true);
+        },
+      ),
+    ).whenComplete(() => setState(() => _selectedStar = null));
   }
 
   @override
@@ -221,6 +231,7 @@ class _MirrorScreenState extends ConsumerState<MirrorScreen> {
                   stars: _stars,
                   threads: _threads,
                   onStarTapped: _onStarTapped,
+                  selectedStar: _selectedStar,
                 ).animate().fadeIn(duration: 800.ms),
               
               // Loading indicator
@@ -388,8 +399,9 @@ class _LegendItem extends StatelessWidget {
 
 class _InsightSheet extends StatelessWidget {
   final Star star;
+  final VoidCallback onReflect;
 
-  const _InsightSheet({required this.star});
+  const _InsightSheet({required this.star, required this.onReflect});
 
   String get _typeLabel {
     switch (star.type) {
@@ -489,6 +501,22 @@ class _InsightSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
+
+                // Reflect Button
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onReflect,
+                    icon: const Icon(LucideIcons.messageCircle, size: 18),
+                    label: Text('Reflect on this', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: star.color.withValues(alpha: 0.8),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),

@@ -103,6 +103,10 @@ List<String> extractKeywords(String text) {
       .toList();
   
   // Common stop words to filter
-  const stopWords = {'the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'been', 'will', 'would', 'could', 'should'};
+  const stopWords = {
+    'the', 'and', 'for', 'with', 'this', 'that', 'from', 'have', 'been', 'will', 
+    'would', 'could', 'should', 'about', 'just', 'more', 'some', 'than', 'then', 
+    'their', 'there', 'they', 'very', 'what', 'when', 'where', 'which', 'your'
+  };
   return words.where((w) => !stopWords.contains(w)).toList();
 }

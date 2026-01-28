@@ -2,8 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/services/supabase_service.dart';
 import 'package:life_os/core/utils/gamification_logic.dart';
 import 'package:life_os/core/models/models.dart';
+import 'package:life_os/features/mirror/services/life_ledger_service.dart';
 
 // --- Gamification ---
+
+final latestInsightProvider = FutureProvider<LedgerEntry?>((ref) async {
+  final ledger = ref.watch(lifeLedgerServiceProvider);
+  // Search for the "[AI Insight]" prefix specifically
+  final items = await ledger.search('[AI Insight]', limit: 5);
+  if (items.isEmpty) return null;
+  
+  // Filter for actual AI Insights just in case
+  final insights = items.where((i) => i.content.startsWith('[AI Insight]')).toList();
+  return insights.isNotEmpty ? insights.first : null;
+});
 
 class UserStats {
   final int streak;

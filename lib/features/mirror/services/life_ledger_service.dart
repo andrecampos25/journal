@@ -185,6 +185,7 @@ class LedgerEntry {
       case 'task': return '✓';
       case 'habit': return '🔥';
       case 'journal': return '📝';
+      case 'insight': return '✨';
       default: return '•';
     }
   }

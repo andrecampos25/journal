@@ -9,16 +9,19 @@ import 'package:life_os/core/models/task.dart';
 import 'package:life_os/core/models/habit.dart';
 import 'package:life_os/core/models/daily_entry.dart';
 import 'dart:async';
+import 'dart:convert';
 
 class ReflectionMessage {
   final String text;
   final bool isUser;
   final DateTime timestamp;
+  final Map<String, dynamic>? suggestion;
 
   ReflectionMessage({
     required this.text,
     required this.isUser,
     DateTime? timestamp,
+    this.suggestion,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
@@ -54,7 +57,7 @@ class ReflectionChatNotifier extends AsyncNotifier<ReflectionChatState> {
         return ReflectionChatState(
           messages: [
             ReflectionMessage(
-              text: '👋 **I am The Mirror.**\n\nI am here to help you find meaning in your journey.',
+              text: 'Hello. I am the Mirror. I analyze your habits, tasks, and notes to surface insights.',
               isUser: false,
             ),
           ],
@@ -157,20 +160,28 @@ class ReflectionChatNotifier extends AsyncNotifier<ReflectionChatState> {
       debugPrint('AI response received: ${response != null}');
 
       if (response != null) {
-        // 4. Memory Loop: Check for "INSIGHT:" trigger
+        // 4. Memory Loop: Check for triggers
         _processInsights(response);
+        final suggestion = _processSuggestions(response);
 
-        // Persist AI message
+        // Persist AI message (original text includes triggers, we'll strip them in UI)
         try {
           ref.read(supabaseServiceProvider).saveChatMessage(response, false);
         } catch (e) {
-          print('DEBUG: AI persist error: $e');
+          debugPrint('DEBUG: AI persist error: $e');
         }
 
         // Update state with AI response
         final newState = state.value ?? currentState;
         state = AsyncValue.data(newState.copyWith(
-          messages: [...newState.messages, ReflectionMessage(text: response, isUser: false)],
+          messages: [
+            ...newState.messages, 
+            ReflectionMessage(
+              text: response, 
+              isUser: false,
+              suggestion: suggestion,
+            )
+          ],
           isLoading: false,
         ));
       } else {
@@ -186,6 +197,66 @@ class ReflectionChatNotifier extends AsyncNotifier<ReflectionChatState> {
     }
   }
 
+  Map<String, dynamic>? _processSuggestions(String aiText) {
+    if (aiText.contains('SUGGESTION:')) {
+      try {
+        final line = aiText.split('\n').firstWhere((l) => l.trim().startsWith('SUGGESTION:'));
+        final jsonStr = line.replaceFirst('SUGGESTION:', '').trim();
+        return json.decode(jsonStr) as Map<String, dynamic>;
+      } catch (e) {
+        debugPrint('Failed to parse suggestion: $e');
+      }
+    }
+    return null;
+  }
+
+  Future<void> acceptSuggestion(Map<String, dynamic> suggestion) async {
+    final supabase = ref.read(supabaseServiceProvider);
+    final type = suggestion['type'] as String;
+    final title = suggestion['title'] as String;
+
+    try {
+      if (type == 'task') {
+        await supabase.createTask(title, DateTime.now().add(const Duration(hours: 4)));
+        ref.invalidate(todayTasksProvider);
+        ref.invalidate(allTasksProvider);
+      } else if (type == 'habit') {
+        await supabase.createHabit(title);
+        ref.invalidate(todayHabitsProvider);
+        ref.invalidate(allHabitsProvider);
+      }
+      ref.invalidate(userStatsProvider);
+      
+      // Update chat state to show it was accepted
+      final currentState = state.value;
+      if (currentState != null) {
+        state = AsyncValue.data(currentState.copyWith(
+          messages: [
+            ...currentState.messages,
+            ReflectionMessage(text: '✅ Done. I have added "$title" to your ${type}s.', isUser: false)
+          ]
+        ));
+      }
+    } catch (e) {
+      debugPrint('Failed to accept suggestion: $e');
+    }
+  }
+
+  Future<void> dismissSuggestion(int index) async {
+    final currentState = state.value;
+    if (currentState != null && index < currentState.messages.length) {
+      final messages = List<ReflectionMessage>.from(currentState.messages);
+      final msg = messages[index];
+      messages[index] = ReflectionMessage(
+        text: msg.text,
+        isUser: msg.isUser,
+        timestamp: msg.timestamp,
+        suggestion: null,
+      );
+      state = AsyncValue.data(currentState.copyWith(messages: messages));
+    }
+  }
+
   void _processInsights(String aiText) {
     if (aiText.contains('INSIGHT:')) {
       final lines = aiText.split('\n');
@@ -195,9 +266,9 @@ class ReflectionChatNotifier extends AsyncNotifier<ReflectionChatState> {
           if (insight.isNotEmpty) {
             // Persist the insight back to the Life Ledger
             ref.read(lifeLedgerServiceProvider).indexContent(
-              sourceType: 'insight',
+              sourceType: 'journal',
               sourceId: 'ai_insight_${DateTime.now().millisecondsSinceEpoch}',
-              content: insight,
+              content: '[AI Insight] $insight',
               sourceDate: DateTime.now(),
             );
             debugPrint('Memory Loop: Saved AI Insight: $insight');

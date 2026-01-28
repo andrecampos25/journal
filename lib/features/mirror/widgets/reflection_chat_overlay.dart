@@ -128,26 +128,14 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
             child: const Icon(LucideIcons.sparkles, color: Colors.white70, size: 18),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'THE MIRROR',
-                style: GoogleFonts.lexend(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              ),
-              Text(
-                'Philosophical Reflection',
-                style: GoogleFonts.inter(
-                  color: Colors.white38,
-                  fontSize: 11,
-                ),
-              ),
-            ],
+          Text(
+            'THE MIRROR',
+            style: GoogleFonts.lexend(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 2,
+            ),
           ),
           const Spacer(),
           IconButton(
@@ -192,10 +180,20 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
                     ? null
                     : Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
-              child: _buildFormattedText(message.text, message.isUser),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildFormattedText(message.text, message.isUser),
+                  if (message.suggestion != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: _buildSuggestionCard(message.suggestion!, index),
+                    ),
+                ],
+              ),
             ),
           ),
-          if (message.isUser) const SizedBox(width: 38), // Balance the avatar space
+          if (message.isUser) const SizedBox(width: 38),
         ],
       ),
     ).animate().fadeIn(delay: (50 * index).ms).slideX(
@@ -207,8 +205,10 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
   }
 
   Widget _buildFormattedText(String text, bool isUser) {
-    // Hide the "INSIGHT:" trigger from the UI if it's there
-    final displayLines = text.split('\n').where((line) => !line.trim().startsWith('INSIGHT:')).join('\n').trim();
+    // Hide the triggers and suggestions from the UI
+    final displayLines = text.split('\n')
+        .where((line) => !line.trim().startsWith('INSIGHT:') && !line.trim().startsWith('SUGGESTION:'))
+        .join('\n').trim();
     
     // Simple markdown-like formatting for **bold**
     final parts = <InlineSpan>[];
@@ -238,6 +238,100 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
           height: 1.5,
         ),
         children: parts.isEmpty ? [TextSpan(text: displayLines)] : parts,
+      ),
+    );
+  }
+
+  Widget _buildSuggestionCard(Map<String, dynamic> suggestion, int index) {
+    final type = suggestion['type'] ?? 'task';
+    final title = suggestion['title'] ?? '';
+    final reason = suggestion['reason'] ?? '';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                type == 'task' ? LucideIcons.checkCircle : LucideIcons.flame,
+                color: const Color(0xFFF97316),
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'PROACTIVE SUGGESTION',
+                style: GoogleFonts.lexend(
+                  color: const Color(0xFFF97316),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: GoogleFonts.lexend(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          if (reason.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              reason,
+              style: GoogleFonts.inter(color: Colors.white60, fontSize: 12, height: 1.4),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(reflectionChatProvider.notifier).dismissSuggestion(index);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text('Dismiss', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    ref.read(reflectionChatProvider.notifier).acceptSuggestion(suggestion);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFF97316),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 4,
+                  ),
+                  child: Text('Accept', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -327,7 +421,10 @@ class _ReflectionChatOverlayState extends ConsumerState<ReflectionChatOverlay> {
           ),
           const SizedBox(width: 12),
           GestureDetector(
-            onTap: _sendMessage,
+            onTap: () {
+              HapticFeedback.heavyImpact();
+              _sendMessage();
+            },
             child: Container(
               width: 48,
               height: 48,

@@ -9,6 +9,7 @@ import 'package:life_os/core/theme/app_theme.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:life_os/services/secret_service.dart';
+import 'package:life_os/services/ai_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -158,6 +159,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final aiService = ref.read(aiServiceProvider);
+                final result = await aiService.testConnection();
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text('AI Diagnostic Result', style: GoogleFonts.lexend()),
+                      content: Text(result, style: GoogleFonts.robotoMono(fontSize: 12)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))
+                      ],
+                    ),
+                  );
+                }
+              },
+              child: Text('Test Connection', style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary)),
             ),
             FilledButton(
               onPressed: () async {

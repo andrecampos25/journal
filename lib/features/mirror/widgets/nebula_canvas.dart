@@ -7,12 +7,14 @@ class NebulaCanvas extends StatefulWidget {
   final List<Star> stars;
   final List<StarThread> threads;
   final Function(Star) onStarTapped;
+  final Star? selectedStar;
 
   const NebulaCanvas({
     super.key,
     required this.stars,
     required this.threads,
     required this.onStarTapped,
+    this.selectedStar,
   });
 
   @override
@@ -109,6 +111,7 @@ class _NebulaCanvasState extends State<NebulaCanvas> with SingleTickerProviderSt
           pulseOrigin: _pulseOrigin,
           pulseRadius: _pulseRadius,
           pulseStrength: _pulseStrength,
+          selectedStar: widget.selectedStar,
         ),
         size: Size.infinite,
       ),
@@ -133,6 +136,7 @@ class _NebulaPainter extends CustomPainter {
   final Offset? pulseOrigin;
   final double pulseRadius;
   final double pulseStrength;
+  final Star? selectedStar;
 
   _NebulaPainter({
     required this.stars,
@@ -141,6 +145,7 @@ class _NebulaPainter extends CustomPainter {
     this.pulseOrigin,
     this.pulseRadius = 0,
     this.pulseStrength = 0,
+    this.selectedStar,
   });
 
   @override
@@ -166,10 +171,21 @@ class _NebulaPainter extends CustomPainter {
           : thread.star1.color;
       
       final paint = Paint()
-        ..color = baseColor.withValues(alpha: thread.strength * 0.4 * pulse)
-        ..strokeWidth = 1 + thread.strength * 2
+        ..color = baseColor.withValues(alpha: thread.strength * 0.4 * pulse * (selectedStar != null ? 1.5 : 1))
+        ..strokeWidth = (selectedStar != null && (thread.star1 == selectedStar || thread.star2 == selectedStar))
+            ? 2 + thread.strength * 4
+            : 1 + thread.strength * 2
         ..style = PaintingStyle.stroke
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 2 + thread.strength * 3);
+      
+      // If a star is selected, only draw threads connected to it brightly
+      if (selectedStar != null) {
+        if (thread.star1 == selectedStar || thread.star2 == selectedStar) {
+          paint.color = baseColor.withValues(alpha: thread.strength * 0.8 * pulse);
+        } else {
+          paint.color = baseColor.withValues(alpha: thread.strength * 0.1 * pulse);
+        }
+      }
       
       canvas.drawLine(thread.star1.position, thread.star2.position, paint);
     }
@@ -183,26 +199,40 @@ class _NebulaPainter extends CustomPainter {
       final color = isInsight ? const Color(0xFFFFD700) : star.color;
       final corePulse = isInsight ? (1.2 + 0.3 * sin(pulsePhase * 1.5)) : pulse;
 
+      // Dim stars that aren't the selected one or connected to it
+      double opacityMultiplier = 1.0;
+      if (selectedStar != null) {
+        final isRelated = threads.any((t) => 
+          (t.star1 == selectedStar && t.star2 == star) || 
+          (t.star2 == selectedStar && t.star1 == star)
+        );
+        if (star != selectedStar && !isRelated) {
+          opacityMultiplier = 0.2;
+        } else if (star == selectedStar) {
+          opacityMultiplier = 1.5;
+        }
+      }
+
       // Outer glow (large, soft)
       final glowPaint = Paint()
-        ..color = color.withValues(alpha: (isInsight ? 0.3 : 0.15) * corePulse)
+        ..color = color.withValues(alpha: (isInsight ? 0.3 : 0.15) * corePulse * opacityMultiplier.clamp(0, 1))
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * (isInsight ? 5 : 3));
       canvas.drawCircle(star.position, star.radius * (isInsight ? 3 : 2), glowPaint);
 
       // Mid glow
       final midGlowPaint = Paint()
-        ..color = color.withValues(alpha: (isInsight ? 0.5 : 0.3) * corePulse)
+        ..color = color.withValues(alpha: (isInsight ? 0.5 : 0.3) * corePulse * opacityMultiplier.clamp(0, 1))
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * (isInsight ? 2.5 : 1.5));
       canvas.drawCircle(star.position, star.radius * (isInsight ? 1.8 : 1.2), midGlowPaint);
 
       final corePaint = Paint()
-        ..color = color.withValues(alpha: 0.7 + 0.3 * corePulse)
+        ..color = color.withValues(alpha: (0.7 + 0.3 * corePulse) * opacityMultiplier.clamp(0, 1))
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, star.radius * 0.3);
       canvas.drawCircle(star.position, star.radius * corePulse, corePaint);
 
       // Bright center point
       final centerPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.6 + 0.4 * corePulse);
+        ..color = Colors.white.withValues(alpha: (0.6 + 0.4 * corePulse) * opacityMultiplier.clamp(0, 1));
       canvas.drawCircle(star.position, star.radius * 0.25 * corePulse, centerPaint);
     }
   }

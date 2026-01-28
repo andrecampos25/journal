@@ -10,6 +10,7 @@ import 'package:life_os/features/dashboard/widgets/today_tasks_list.dart';
 import 'package:life_os/features/dashboard/widgets/calendar_strip.dart';
 import 'package:life_os/features/dashboard/widgets/daily_progress_indicator.dart';
 import 'package:life_os/features/dashboard/widgets/nlp_quick_bar.dart';
+import 'package:life_os/features/dashboard/widgets/mirror_insight_widget.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:life_os/features/dashboard/dashboard_providers.dart';
@@ -128,9 +129,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsB
                 const CalendarStrip(),
                 const SizedBox(height: 8),
                 
-                // Daily Progress Indicator
-                const DailyProgressIndicator(),
-                const SizedBox(height: 8),
                 
                 // Scrollable Content
                 Expanded(
@@ -150,6 +148,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with WidgetsB
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const MirrorInsightWidget(),
                           const NLPQuickBar(),
                           
                           // Tasks & Habits Combined Card
