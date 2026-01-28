@@ -71,40 +71,83 @@ class OtaService {
   }
 
   Future<void> tryUpdate(String url, BuildContext context) async {
+    debugPrint('OTA: Starting update process for URL: $url');
+    
     try {
-      OtaUpdate().execute(
-        url, 
-        destinationFilename: 'life_os_update.apk',
+      // Execute OTA update and listen to the stream
+      final otaStream = OtaUpdate().execute(
+        url,
+        destinationFilename: 'life_os_v120.apk',
         androidProviderAuthority: 'com.lifeos.life_os.ota_update_provider',
-      ).listen(
+      );
+
+      otaStream.listen(
         (OtaEvent event) {
+          debugPrint('OTA Event: status=${event.status}, value=${event.value}');
+          
+          if (!context.mounted) return;
+
           switch (event.status) {
             case OtaStatus.DOWNLOADING:
-              // For simplicity, we just log progress, but could update a state provider
-              debugPrint('OTA: Downloading ${event.value}%');
+              final progress = event.value;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Downloading update: $progress%'),
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
               break;
             case OtaStatus.INSTALLING:
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Starting installation...')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Download complete. Starting installation...'),
+                  backgroundColor: Colors.green,
+                ),
+              );
               break;
             case OtaStatus.ALREADY_RUNNING_ERROR:
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update already in progress.')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('An update is already in progress.')),
+              );
               break;
             case OtaStatus.PERMISSION_NOT_GRANTED_ERROR:
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permission denied to install updates.')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Permission denied to install update.')),
+              );
               break;
             case OtaStatus.DOWNLOAD_ERROR:
             case OtaStatus.CHECKSUM_ERROR:
             case OtaStatus.INTERNAL_ERROR:
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Update failed: ${event.status}')));
+              debugPrint('OTA Error State: ${event.status}');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Update failed (${event.status}). Please try again later.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
               break;
             default:
               break;
           }
         },
+        onError: (error) {
+          debugPrint('OTA Stream Error: $error');
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('OTA Stream Error: $error'), backgroundColor: Colors.red),
+            );
+          }
+        },
+        onDone: () => debugPrint('OTA Stream Closed'),
       );
     } catch (e) {
-       debugPrint('OTA Error: $e');
-        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OTA Error: $e')));
+      debugPrint('OTA Execution Exception: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Native Update Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }
